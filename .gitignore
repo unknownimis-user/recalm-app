@@ -2,11 +2,13 @@
 build/
 *.apk
 *.idsig
+build.ps1
 
 # signing — never commit
 *.keystore
 *.jks
 
-# OS noise
+# IDE and OS noise
+.idea/
 .DS_Store
 Thumbs.db
