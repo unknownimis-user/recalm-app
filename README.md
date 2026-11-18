@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ReCalm
 
 A personal, offline-first Android focus timer with **real app blocking** — a
@@ -216,3 +217,6 @@ inspect and wipe in the app.
 ## License
 
 Personal project, no license — use it however you like.
+=======
+# recalm-app
+>>>>>>> 89882947fa42a8e9734046d68685ea48cf9be8e2
