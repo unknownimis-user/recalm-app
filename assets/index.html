@@ -1,0 +1,2491 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="aurora">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a1210">
+<title>ReCalm</title>
+<link rel="icon" href="data:,">
+<style>
+/* ============ reset & base ============ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body {
+  font-family: -apple-system, "Roboto", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; user-select: none; -webkit-user-select: none; }
+input, textarea { font: inherit; color: inherit; }
+img { display: block; }
+::selection { background: var(--accent-soft); }
+
+/* ============ themes ============ */
+html[data-theme="aurora"] {
+  --bg:#0a1210; --surface:#101b17; --surface2:#15221d; --border:#1e2b25;
+  --text:#e8f2ed; --muted:#8fa79b; --accent:#34d399; --accent2:#2dd4bf;
+  --accent-soft:rgba(52,211,153,.14); --accent-glow:rgba(52,211,153,.30);
+  --danger:#f87171; --danger-soft:rgba(248,113,113,.12); --gold:#fbbf24;
+  --on-accent:#06251c;
+}
+html[data-theme="sunset"] {
+  --bg:#131009; --surface:#1d1712; --surface2:#251d15; --border:#332819;
+  --text:#f5ece0; --muted:#a8977f; --accent:#fb923c; --accent2:#f59e0b;
+  --accent-soft:rgba(251,146,60,.14); --accent-glow:rgba(251,146,60,.30);
+  --danger:#f87171; --danger-soft:rgba(248,113,113,.12); --gold:#fbbf24;
+  --on-accent:#2b1503;
+}
+html[data-theme="lavender"] {
+  --bg:#0f0d17; --surface:#181527; --surface2:#201c33; --border:#2c2745;
+  --text:#ede9fa; --muted:#9d97bd; --accent:#a78bfa; --accent2:#c4b5fd;
+  --accent-soft:rgba(167,139,250,.16); --accent-glow:rgba(167,139,250,.32);
+  --danger:#f87171; --danger-soft:rgba(248,113,113,.12); --gold:#fbbf24;
+  --on-accent:#1d1240;
+}
+html[data-theme="glass"] {
+  --bg:#0b0e14; --surface:rgba(255,255,255,.07); --surface2:rgba(255,255,255,.11);
+  --border:rgba(255,255,255,.13); --text:#f2f5fa; --muted:#a7b2c2;
+  --accent:#f7fafd; --accent2:#ccd6e3;
+  --accent-soft:rgba(255,255,255,.15); --accent-glow:rgba(255,255,255,.30);
+  --danger:#f87171; --danger-soft:rgba(248,113,113,.13); --gold:#fbbf24;
+  --on-accent:#121824;
+}
+
+/* ============ app shell ============ */
+#app { height: 100dvh; display: flex; flex-direction: column; }
+#hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 18px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.logo { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: var(--on-accent); flex: none; }
+.logo svg { width: 17px; height: 17px; }
+#hdr .brand { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; }
+#hdr .spacer { flex: 1; }
+.streak-chip {
+  display: flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 999px;
+  background: var(--surface2); border: 1px solid var(--border); font-size: 13px; font-weight: 700;
+}
+.streak-chip svg { width: 14px; height: 14px; color: var(--gold); animation: flick 2.4s ease-in-out infinite; }
+@keyframes flick { 0%,100% { transform: scale(1); } 50% { transform: scale(1.14) rotate(-3deg); } }
+.iconbtn { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted); flex: none; }
+.iconbtn:active { transform: scale(.93); }
+.iconbtn svg { width: 17px; height: 17px; }
+
+#view { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 18px 28px; }
+#view::-webkit-scrollbar, .scroll-y::-webkit-scrollbar { width: 4px; }
+#view::-webkit-scrollbar-thumb, .scroll-y::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+#tabbar {
+  display: flex; border-top: 1px solid var(--border); background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 9px 0 8px; color: var(--muted); position: relative;
+}
+.tab svg { width: 21px; height: 21px; }
+.tab span { font-size: 10.5px; font-weight: 600; letter-spacing: .01em; }
+.tab.active { color: var(--accent); }
+.tab.active::before {
+  content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 26px; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent);
+}
+
+/* ============ common components ============ */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 16px; }
+.h-label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 2px 10px; }
+.h-label:first-child { margin-top: 2px; }
+.muted { color: var(--muted); }
+.row { display: flex; align-items: center; gap: 12px; }
+.grow { flex: 1; min-width: 0; }
+
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 52px; border-radius: 999px; font-weight: 700; font-size: 15.5px; width: 100%;
+  transition: transform .08s ease, opacity .15s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn svg { width: 18px; height: 18px; }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: var(--on-accent);
+  box-shadow: 0 8px 26px -8px var(--accent-glow); }
+.btn.soft { background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; }
+.btn.ghost { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+.btn.danger { background: var(--danger-soft); color: var(--danger); }
+.btn.sm { height: 42px; font-size: 14px; }
+.btn.auto { width: auto; flex: none; padding: 0 20px; }
+
+.chip {
+  padding: 7px 13px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted); flex: none;
+}
+.chip.on { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.chip:disabled { opacity: .35; pointer-events: none; }
+
+/* schedule day chips + time inputs */
+.day-chips { display: flex; gap: 6px; margin-top: 12px; }
+.day-chips .chip { flex: 1; justify-content: center; padding: 9px 0; font-weight: 800; }
+input[type="time"].input { color-scheme: dark; font-weight: 700; letter-spacing: .04em; }
+input[type="time"].input::-webkit-calendar-picker-indicator { opacity: .55; }
+.badge-strict {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px;
+  background: var(--danger-soft); color: var(--danger); font-size: 10.5px; font-weight: 800; letter-spacing: .08em;
+}
+.badge-strict svg { width: 10px; height: 10px; }
+
+/* switch */
+.switch { width: 46px; height: 28px; border-radius: 999px; background: var(--surface2);
+  border: 1px solid var(--border); position: relative; flex: none; transition: background .18s ease; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--muted); transition: transform .18s ease, background .18s ease; }
+.switch.on { background: var(--accent); border-color: transparent; }
+.switch.on::after { transform: translateX(18px); background: var(--on-accent); }
+
+/* stepper */
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepbtn { width: 38px; height: 38px; border-radius: 12px; background: var(--surface2);
+  border: 1px solid var(--border); display: grid; place-items: center; font-size: 19px; font-weight: 700; color: var(--accent); }
+.stepbtn:active { transform: scale(.92); }
+
+/* segmented */
+.seg { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 13px; padding: 3px; gap: 3px; }
+.seg button { flex: 1; height: 36px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.seg button.on { background: var(--accent-soft); color: var(--accent); }
+
+/* range */
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 30px; background: transparent; }
+input[type="range"]::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: var(--surface2); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); margin-top: -8.5px; border: 3px solid var(--bg); box-shadow: 0 0 0 1px var(--border); }
+
+/* inputs */
+.input { width: 100%; height: 48px; border-radius: 14px; background: var(--surface2);
+  border: 1px solid var(--border); padding: 0 14px; font-size: 15px; outline: none; }
+.input::placeholder { color: var(--muted); }
+.input:focus { border-color: var(--accent); }
+
+/* progress bar */
+.bar { height: 8px; border-radius: 4px; background: var(--surface2); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s ease; }
+
+/* ============ timer view ============ */
+.timer-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+.phase-line { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
+.phase-name { font-size: 13px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+.round-dots { display: flex; gap: 6px; margin-bottom: 18px; }
+.rdot { width: 8px; height: 8px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); }
+.rdot.done { background: var(--accent); border-color: transparent; }
+.rdot.cur { background: var(--accent-soft); border-color: var(--accent); animation: pulse-dot 1.6s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100% { transform: scale(1); } 50% { transform: scale(1.45); } }
+
+.ring-box { position: relative; width: 268px; height: 268px; }
+.ring-box svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--surface2); stroke-width: 11; }
+.ring-fg { fill: none; stroke: url(#ringGrad); stroke-width: 11; stroke-linecap: round;
+  filter: drop-shadow(0 0 10px var(--accent-glow)); }
+.ring-box.break .ring-fg { stroke: var(--muted); filter: none; opacity: .8; }
+.ring-mid { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+#time-txt { font-size: 54px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+#time-sub { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 7px; }
+.subject-chip { max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-top: 14px; padding: 6px 12px; border-radius: 999px; background: var(--surface2);
+  border: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+
+.avoid-strip { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 16px; max-width: 300px; }
+.avoid-strip .chip { font-size: 11.5px; padding: 5px 10px; color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+
+.ctrl { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-top: 26px; }
+.dur-row { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.today-strip { width: 100%; max-width: 320px; margin-top: 26px; }
+.today-strip .row { justify-content: space-between; margin-bottom: 8px; font-size: 12.5px; }
+
+/* hold-to-give-up */
+.hold-btn { position: relative; overflow: hidden; }
+.hold-btn .fill { position: absolute; inset: 0; width: 0%; background: rgba(248,113,113,.28); pointer-events: none; }
+.hold-btn .lbl { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* ============ stats view ============ */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat-card .k { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.stat-card .v { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin-top: 6px; }
+.stat-card .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stat-card.wide { grid-column: span 2; }
+.week { display: flex; justify-content: space-between; margin-top: 14px; }
+.wcol { display: flex; flex-direction: column; align-items: center; gap: 7px; width: 34px; }
+.wbar { width: 100%; height: 96px; border-radius: 8px; background: var(--surface2); display: flex; align-items: flex-end; overflow: hidden; }
+.wbar > i { width: 100%; border-radius: 8px; background: linear-gradient(180deg, var(--accent), var(--accent2)); min-height: 2px; }
+.wcol .wl { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+.wcol.today .wl { color: var(--accent); }
+
+.hist-group { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 8px; }
+.hist-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 15px;
+  background: var(--surface); border: 1px solid var(--border); margin-bottom: 8px; }
+.hist-row .st { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: none; }
+.hist-row .st.ok { background: var(--accent-soft); color: var(--accent); }
+.hist-row .st.bad { background: var(--danger-soft); color: var(--danger); }
+.hist-row .st svg { width: 16px; height: 16px; }
+.hist-row .t { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-row .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.hist-row .when { font-size: 11.5px; color: var(--muted); text-align: right; flex: none; }
+.mini-badge { display: inline-block; padding: 2px 7px; border-radius: 6px; font-size: 10px; font-weight: 800;
+  letter-spacing: .06em; background: var(--surface2); color: var(--muted); margin-left: 6px; vertical-align: 1px; }
+.mini-badge.strict { background: var(--danger-soft); color: var(--danger); }
+
+/* ============ guard view ============ */
+.guard-hero { display: flex; gap: 14px; align-items: center; }
+.guard-hero img { width: 74px; height: 74px; border-radius: 20px; flex: none; object-fit: cover; }
+.guard-hero p { font-size: 13px; line-height: 1.5; color: var(--muted); }
+.trap-row { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 15px;
+  background: var(--surface); border: 1px solid var(--border); margin-bottom: 8px; }
+.trap-row .ic { width: 34px; height: 34px; border-radius: 11px; background: var(--danger-soft);
+  color: var(--danger); display: grid; place-items: center; flex: none; }
+.trap-row .ic svg { width: 16px; height: 16px; }
+.trap-row .t { font-weight: 700; font-size: 14px; }
+.trap-row .d { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+/* ============ settings view ============ */
+.set-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.set-row:last-child { border-bottom: none; }
+.set-row .t { font-weight: 700; font-size: 14.5px; }
+.set-row .d { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.set-row .av { border-radius: 11px; display: grid; place-items: center; font-weight: 800; flex: none;
+  background: var(--surface2); color: var(--muted); font-size: 15px; }
+.swatches { display: flex; gap: 12px; }
+.swatch { width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid transparent; position: relative; flex: none; }
+.swatch.on { border-color: var(--text); }
+.swatch.on::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; border: 2px solid var(--bg); }
+
+/* ============ app shield ============ */
+.perm-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.perm-row:last-child { border-bottom: none; }
+.perm-row .ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: none;
+  background: var(--surface2); color: var(--muted); }
+.perm-row .ic.ok { background: var(--accent-soft); color: var(--accent); }
+.perm-row .ic svg { width: 16px; height: 16px; }
+.perm-row .t { font-weight: 700; font-size: 14px; }
+.perm-row .d { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.perm-grant { flex: none; padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  background: var(--accent-soft); color: var(--accent); }
+.perm-grant:active { transform: scale(.95); }
+.shield-armed { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14.5px; }
+.shield-armed svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
+.app-row { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 15px;
+  background: var(--surface); border: 1px solid var(--border); margin-bottom: 8px; }
+.app-row img { width: 38px; height: 38px; border-radius: 11px; flex: none; background: var(--surface2); object-fit: cover; }
+.app-row .av, .blocklog-row .av { border-radius: 11px; display: grid; place-items: center; font-weight: 800; flex: none; }
+.app-row .av { width: 38px; height: 38px; background: var(--surface2); color: var(--muted); font-size: 16px; }
+.app-row .t { font-weight: 700; font-size: 14px; }
+.app-row .d { font-size: 11px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.app-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 13px 4px 10px; border-radius: 15px; background: var(--surface2); border: 1.5px solid transparent; }
+.app-tile:active { transform: scale(.94); }
+.app-tile img { width: 40px; height: 40px; border-radius: 11px; }
+.app-tile span { font-size: 10.5px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.25;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.app-tile.on { border-color: var(--accent); background: var(--accent-soft); }
+.app-tile.on span { color: var(--text); }
+.app-tile .tick { position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent); display: none; place-items: center; }
+.app-tile.on .tick { display: grid; }
+.app-tile .tick svg { width: 10px; height: 10px; }
+#app-list { max-height: 46vh; overflow-y: auto; margin-top: 8px; -webkit-overflow-scrolling: touch; }
+.blocklog-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; font-size: 13px; }
+.blocklog-row .av { width: 30px; height: 30px; border-radius: 9px; background: var(--danger-soft);
+  color: var(--danger); font-size: 13px; }
+.blocklog-row .when { margin-left: auto; color: var(--muted); font-size: 11.5px; flex: none; }
+.shield-chip { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 7px 14px;
+  border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+.shield-chip.warn { background: var(--danger-soft); color: var(--danger); }
+.shield-chip svg { width: 13px; height: 13px; }
+
+/* trusted apps (v2.8): per-app trusted / not-trusted buttons */
+.trust-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 106px; padding: 11px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 800;
+  background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.trust-btn svg { width: 13px; height: 13px; flex: none; }
+.trust-btn.on { background: rgba(251,191,36,.13); color: var(--gold); border-color: rgba(251,191,36,.34); }
+.trust-btn:active { transform: scale(.95); }
+.trust-flag { font-size: 11px; font-weight: 700; color: var(--gold); }
+
+/* ============ overlays ============ */
+.overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.overlay.center { align-items: center; padding: 24px; }
+.overlay .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.62); backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px); animation: fade .2s ease; }
+@keyframes fade { from { opacity: 0; } }
+.sheet { position: relative; width: 100%; max-width: 430px; background: var(--surface);
+  border: 1px solid var(--border); border-bottom: none; border-radius: 26px 26px 0 0;
+  padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  animation: slideup .26s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes slideup { from { transform: translateY(60%); opacity: .4; } }
+.sheet .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 16px; }
+.sheet h3 { font-size: 18px; font-weight: 800; letter-spacing: -.01em; }
+.sheet .sub { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+.modal { position: relative; width: 100%; max-width: 360px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 26px; padding: 26px 22px 22px; text-align: center;
+  animation: pop .3s cubic-bezier(.2,.9,.3,1.25); }
+@keyframes pop { from { transform: scale(.82); opacity: 0; } }
+.modal img.mascot { width: 110px; height: 110px; border-radius: 32px; margin: 0 auto 14px; object-fit: cover;
+  box-shadow: 0 14px 34px -12px var(--accent-glow); }
+.modal h3 { font-size: 21px; font-weight: 800; }
+.modal .stats-line { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.modal .stats-line .chip { font-size: 12px; }
+.modal .btn { margin-top: 10px; }
+
+/* toast */
+#toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  transform: translate(-50%, 20px); z-index: 90; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 11px 18px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+  opacity: 0; pointer-events: none; transition: all .25s ease; max-width: 86vw; text-align: center; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* zen mode */
+body.zen #hdr, body.zen #tabbar, body.zen .h-label { display: none; }
+body.zen #view { padding: 0; display: grid; place-items: center; overflow: hidden; }
+body.zen .timer-wrap { transform: scale(1.06); }
+body.zen .ctrl, body.zen .dur-row, body.zen .today-strip, body.zen .avoid-strip, body.zen #zen-hint,
+  body.zen .subject-chip { transition: opacity .3s ease; }
+body.zen.zenui-hide .ctrl, body.zen.zenui-hide .dur-row, body.zen.zenui-hide .today-strip,
+  body.zen.zenui-hide .avoid-strip, body.zen.zenui-hide .subject-chip, body.zen.zenui-hide #zen-hint { opacity: 0; pointer-events: none; }
+#zen-exit { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 14px; z-index: 70; display: none; }
+body.zen #zen-exit { display: grid; }
+body.zen { background: radial-gradient(120% 90% at 50% 0%, var(--surface) 0%, var(--bg) 62%); }
+
+/* confetti */
+#confetti { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
+
+.empty { text-align: center; color: var(--muted); font-size: 13.5px; line-height: 1.6; padding: 26px 10px; }
+
+/* ============ liquid glass (Apple-style) ============ */
+/* drifting pools of light behind the frosted layers */
+html[data-theme="glass"] body::before,
+html[data-theme="glass"] body::after {
+  content: ""; position: fixed; inset: -25%; z-index: -1; pointer-events: none;
+}
+html[data-theme="glass"] body::before {
+  background:
+    radial-gradient(38% 34% at 20% 24%, rgba(45,212,191,.20), transparent 70%),
+    radial-gradient(34% 30% at 80% 18%, rgba(167,139,250,.16), transparent 70%),
+    radial-gradient(42% 38% at 74% 80%, rgba(251,113,133,.14), transparent 72%);
+  animation: glassDriftA 30s ease-in-out infinite alternate;
+}
+html[data-theme="glass"] body::after {
+  background:
+    radial-gradient(36% 32% at 30% 76%, rgba(251,191,36,.12), transparent 70%),
+    radial-gradient(30% 26% at 78% 58%, rgba(52,211,153,.12), transparent 70%);
+  animation: glassDriftB 38s ease-in-out infinite alternate;
+}
+@keyframes glassDriftA { from { transform: translate3d(-3%,-2%,0) scale(1); } to { transform: translate3d(3%,3%,0) scale(1.08); } }
+@keyframes glassDriftB { from { transform: translate3d(2%,3%,0) scale(1.05); } to { transform: translate3d(-3%,-2%,0) scale(.97); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="glass"] body::before, html[data-theme="glass"] body::after { animation: none; }
+  html[data-theme="glass"] .btn.primary::after { animation: none; }
+}
+
+/* frosted panels: blur the light, catch a specular rim on top */
+html[data-theme="glass"] .card,
+html[data-theme="glass"] .hist-row,
+html[data-theme="glass"] .trap-row,
+html[data-theme="glass"] .app-row,
+html[data-theme="glass"] .sheet,
+html[data-theme="glass"] .modal,
+html[data-theme="glass"] #toast {
+  -webkit-backdrop-filter: blur(26px) saturate(165%);
+  backdrop-filter: blur(26px) saturate(165%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.17), inset 0 -1px 0 rgba(255,255,255,.045),
+    0 14px 40px -16px rgba(0,0,0,.5);
+}
+html[data-theme="glass"] #hdr,
+html[data-theme="glass"] #tabbar {
+  background: rgba(12,15,21,.52);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+}
+html[data-theme="glass"] .chip,
+html[data-theme="glass"] .streak-chip,
+html[data-theme="glass"] .iconbtn,
+html[data-theme="glass"] .seg,
+html[data-theme="glass"] .stepbtn,
+html[data-theme="glass"] .input,
+html[data-theme="glass"] .subject-chip,
+html[data-theme="glass"] .app-tile,
+html[data-theme="glass"] .set-row .av,
+html[data-theme="glass"] .perm-row .ic,
+html[data-theme="glass"] .app-row .av,
+html[data-theme="glass"] .blocklog-row .av,
+html[data-theme="glass"] .hist-row .st,
+html[data-theme="glass"] .trap-row .ic,
+html[data-theme="glass"] .shield-chip,
+html[data-theme="glass"] .perm-grant {
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+}
+
+/* liquid-chrome primary pill with a slow sheen sweep */
+html[data-theme="glass"] .btn.primary {
+  position: relative; overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #dfe6ef 52%, #c3cedd 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 -2px 5px rgba(255,255,255,.4),
+    0 10px 30px -10px rgba(226,234,244,.35);
+}
+html[data-theme="glass"] .btn.primary::after {
+  content: ""; position: absolute; top: -10%; bottom: -10%; width: 34%; left: -55%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.85), transparent);
+  transform: skewX(-18deg); pointer-events: none;
+  animation: glassSheen 5.2s cubic-bezier(.4,0,.2,1) infinite;
+}
+@keyframes glassSheen { 0%, 58% { left: -55%; } 88%, 100% { left: 125%; } }
+
+/* deeper frost behind overlays */
+html[data-theme="glass"] .overlay .backdrop {
+  background: rgba(4,6,10,.55);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  backdrop-filter: blur(16px) saturate(130%);
+}
+
+/* graceful fallback when backdrop-filter is unavailable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme="glass"] { --surface:rgba(30,34,42,.88); --surface2:rgba(38,43,52,.92); }
+  html[data-theme="glass"] #hdr, html[data-theme="glass"] #tabbar { background: rgba(15,18,24,.94); }
+}
+
+/* ============ jigsaw gate (give-up friction) ============ */
+.modal.pz-wrap { max-width: 360px; max-height: calc(100dvh - 48px); overflow-y: auto; }
+.pz-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  width: min(100%, 52vh); margin: 16px auto 0; }
+.pz-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 9px; overflow: hidden;
+  background: var(--surface2); border: 1px dashed var(--border); }
+.pz-cell .pz-hint { position: absolute; inset: 0; background-repeat: no-repeat;
+  opacity: .17; pointer-events: none; }
+.pz-cell:active { transform: scale(.97); }
+.pz-cell.bad { animation: pz-shake .32s ease; border-color: var(--danger); }
+.pz-cell.locked { border-style: solid; border-color: transparent; }
+.pz-cell.locked .pz-tile { box-shadow: 0 2px 8px rgba(0,0,0,.35), inset 0 0 0 2px var(--accent-glow); }
+@keyframes pz-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.pz-tile { width: 100%; height: 100%; border-radius: 8px; background-repeat: no-repeat;
+  border: 1px solid rgba(255,255,255,.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.28); }
+.pz-tray { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 14px; min-height: 46px; }
+.pz-tray:empty::after { content: "all placed — checking…"; font-size: 11.5px; color: var(--muted); align-self: center; }
+.pz-tray .pz-tile { width: 40px; height: 40px; flex: none; border-radius: 7px; }
+.pz-tray .pz-tile.sel { outline: 2.5px solid var(--accent); outline-offset: 2px; transform: scale(1.08); }
+.pz-done .pz-cell { border-color: transparent; }
+.pz-done .pz-tile { box-shadow: 0 0 0 2px var(--accent), 0 8px 22px -8px var(--accent-glow) !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr"></header>
+  <main id="view"></main>
+  <nav id="tabbar"></nav>
+</div>
+<button id="zen-exit" class="iconbtn" data-action="zenoff" aria-label="Exit zen mode"></button>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:40px;text-align:center">ReCalm needs JavaScript enabled.</p></noscript>
+<script>
+'use strict';
+/* =====================================================================
+   ReCalm — personal focus timer (single-file Android app)
+   All state lives in localStorage. Timestamp-based timing survives
+   app restarts and background freezes. Day boundaries use IST (UTC+5:30).
+   ===================================================================== */
+
+/* ---------- tiny utils ---------- */
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const IST = 5.5 * 3600e3, DAY = 86400e3;
+const dayKey = ms => new Date(ms + IST).toISOString().slice(0, 10);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WD  = ['S','M','T','W','T','F','S'];
+function istParts(ms) { const d = new Date(ms + IST);
+  return { h: d.getUTCHours(), m: d.getUTCMinutes(), wd: d.getUTCDay(), date: d.getUTCDate(), mon: d.getUTCMonth(), yr: d.getUTCFullYear() }; }
+const two = n => String(n).padStart(2, '0');
+const clockHM = ms => { const p = istParts(ms); return two(p.h) + ':' + two(p.m); };
+const dayLabel = ms => { const k = dayKey(ms);
+  if (k === dayKey(Date.now())) return 'Today';
+  if (k === dayKey(Date.now() - DAY)) return 'Yesterday';
+  const p = istParts(ms); return MON[p.mon] + ' ' + p.date + (p.yr !== istParts(Date.now()).yr ? ', ' + p.yr : ''); };
+function fmtDur(sec) { sec = Math.max(0, Math.round(sec));
+  if (sec < 3600) return Math.round(sec / 60) + ' min';
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+  return h + 'h ' + two(m) + 'm'; }
+function fmtClock(sec) { sec = Math.max(0, Math.ceil(sec));
+  return two(Math.floor(sec / 60)) + ':' + two(sec % 60); }
+const daysLabel = n => n + ' day' + (n === 1 ? '' : 's');
+
+/* compact sha256 (public-domain style; verified against reference vectors) — used for PIN hashes only */
+function sha256(ascii) {
+  function rr(v, a) { return (v >>> a) | (v << (32 - a)); }
+  let i, j, result = '';
+  const words = [], bits = ascii.length * 8;
+  let hash = sha256.h = sha256.h || [];
+  const k = sha256.k = sha256.k || [];
+  let pc = k.length;
+  const comp = {};
+  for (let cand = 2; pc < 64; cand++) {
+    if (!comp[cand]) {
+      for (i = 0; i < 313; i += cand) comp[i] = cand;
+      hash[pc] = (Math.pow(cand, .5) * 4294967296) | 0;
+      k[pc++] = (Math.pow(cand, 1 / 3) * 4294967296) | 0;
+    }
+  }
+  ascii += '\x80';
+  while (ascii.length % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii.length; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) return null;
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+  }
+  words[words.length] = (bits / 4294967296) | 0;
+  words[words.length] = bits;
+  for (j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16), old = hash;
+    hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4];
+      const t1 = hash[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & hash[5]) ^ ((~e) & hash[6])) + k[i] +
+        (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
+      const t2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(t1 + t2) | 0].concat(hash);
+      hash[4] = (hash[4] + t1) | 0;
+    }
+    for (i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
+  }
+  for (i = 0; i < 8; i++) for (j = 3; j + 1; j--) {
+    const b = (hash[i] >> (j * 8)) & 255;
+    result += (b < 16 ? '0' : '') + b.toString(16);
+  }
+  return result;
+}
+const hmToMin = hm => { const p = String(hm || '0:0').split(':'); return ((+p[0] || 0) * 60 + (+p[1] || 0)); };
+const minToHm = m => { m = ((m % 1440) + 1440) % 1440; return two(Math.floor(m / 60)) + ':' + two(m % 60); };
+
+/* ---------- icons (inline svg, stroke style) ---------- */
+const I = (() => {
+  const w = inner => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+  return {
+    leaf:   w('<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>'),
+    flame:  w('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'),
+    timer:  w('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/>'),
+    chart:  w('<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 15v-4"/><path d="M12 15V7"/><path d="M17 15v-6"/>'),
+    shield: w('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>'),
+    sliders:w('<path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>'),
+    play:   w('<polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/>'),
+    pause:  w('<rect x="5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" stroke="none"/><rect x="14.5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" stroke="none"/>'),
+    x:      w('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+    check:  w('<path d="M20 6 9 17l-5-5"/>'),
+    plus:   w('<path d="M5 12h14"/><path d="M12 5v14"/>'),
+    trash:  w('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'),
+    ban:    w('<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/>'),
+    expand: w('<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>'),
+    chevDn: w('<path d="m6 9 6 6 6-6"/>'),
+    zap:    w('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'),
+    skip:   w('<polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none"/><line x1="19" y1="5" x2="19" y2="19"/>'),
+    flag:   w('<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>'),
+    dl:     w('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>'),
+  };
+})();
+
+/* ---------- state ---------- */
+const KEY = 'reclaim.android.v1';
+const DEFAULT_SETTINGS = {
+  focusMin: 25, shortMin: 5, longMin: 15, rounds: 4, dailyGoalMin: 120,
+  strictDefault: true, autoBreak: true, autoFocus: false,
+  sound: 'rain', volume: 0.7, theme: 'aurora', keepAwake: true,
+  maxPauses: 3, pinHash: '',
+};
+let S = null;
+function load() {
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* fresh */ }
+  S = {
+    settings: Object.assign({}, DEFAULT_SETTINGS, (raw && raw.settings) || {}),
+    sessions: (raw && raw.sessions) || [],
+    blocklist: (raw && raw.blocklist) || [],
+    blockedApps: (raw && raw.blockedApps) || [],
+    timer: (raw && raw.timer) || null,
+    schedule: Object.assign(
+      { enabled: false, days: [1, 1, 1, 1, 1, 0, 0], start: '09:00', end: '17:00', strict: false },
+      (raw && raw.schedule) || {}),
+    pauses: (raw && raw.pauses) || [],
+    pauseUntil: (raw && raw.pauseUntil) || 0,
+    quick: Object.assign({ until: 0 }, (raw && raw.quick) || {}),
+    limits: (raw && raw.limits) || {},
+    reelsOnly: (raw && raw.reelsOnly) || [],
+    trusted: (raw && raw.trusted) || [],
+  };
+  if (S.schedule.days.length !== 7) S.schedule.days = [1, 1, 1, 1, 1, 0, 0];
+  if (!S.timer) S.timer = { phase: 'focus', round: 1, running: false, paused: false };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- sound engine (Web Audio, fully synthesized) ---------- */
+const Sound = {
+  ctx: null, master: null, rain: null,
+  unlock() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.setVolume(S.settings.volume);
+  },
+  setVolume(v) { if (this.master) this.master.gain.value = clamp(v, 0, 1); },
+  bell(freq, at, dur, vol) {
+    if (!this.ctx || !this.master) return;
+    const t0 = this.ctx.currentTime + (at || 0);
+    const mk = (f, v, d) => {
+      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.25 * v * (vol == null ? 1 : vol)), t0 + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+      o.connect(g); g.connect(this.master);
+      o.start(t0); o.stop(t0 + d + 0.05);
+    };
+    mk(freq, 1, dur || 1.1);
+    mk(freq * 2.756, 0.32, (dur || 1.1) * 0.55);
+  },
+  startBlip()  { this.unlock(); this.bell(880, 0, 0.28, 0.5); },
+  complete()   { this.unlock(); this.bell(587.33, 0, 1.0); this.bell(783.99, 0.14, 1.0); this.bell(1046.5, 0.28, 1.3); },
+  breakOver()  { this.unlock(); this.bell(659.25, 0, 0.9); this.bell(880, 0.16, 1.1); },
+  fail()       { this.unlock(); this.bell(196, 0, 0.55, 0.55); this.bell(146.83, 0.2, 0.8, 0.55); },
+  startRain() {
+    this.unlock();
+    if (!this.ctx || this.rain) return;
+    const len = 2 * this.ctx.sampleRate;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = this.ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 820; lp.Q.value = 0.4;
+    const lfo = this.ctx.createOscillator(), lfoG = this.ctx.createGain();
+    lfo.frequency.value = 0.09; lfoG.gain.value = 140;
+    lfo.connect(lfoG); lfoG.connect(lp.frequency);
+    const g = this.ctx.createGain(); g.gain.value = 0.16 * clamp(S.settings.volume, 0, 1);
+    src.connect(lp); lp.connect(g); g.connect(this.master || this.ctx.destination);
+    src.start(); lfo.start();
+    this.rain = { src, lfo, g };
+  },
+  /* v2.6: two more synthesized soundscapes — ocean swell and deep brown hum */
+  brownBuffer() {
+    const len = 4 * this.ctx.sampleRate;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    let b = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      b = (b + 0.02 * w) / 1.02;
+      data[i] = b * 3.2;
+    }
+    return buf;
+  },
+  startOcean() {
+    this.unlock();
+    if (!this.ctx || this.rain) return;
+    const src = this.ctx.createBufferSource(); src.buffer = this.brownBuffer(); src.loop = true;
+    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 0.5;
+    /* the swell: a slow rise and fall, like waves reaching the shore */
+    const g = this.ctx.createGain(); g.gain.value = 0.14;
+    const swell = this.ctx.createOscillator(), swellG = this.ctx.createGain();
+    swell.frequency.value = 0.055; swellG.gain.value = 0.09;
+    swell.connect(swellG); swellG.connect(g.gain);
+    const wash = this.ctx.createOscillator(), washG = this.ctx.createGain();
+    wash.frequency.value = 0.031; washG.gain.value = 110;
+    wash.connect(washG); washG.connect(lp.frequency);
+    src.connect(lp); lp.connect(g); g.connect(this.master || this.ctx.destination);
+    src.start(); swell.start(); wash.start();
+    this.rain = { src, lfo: swell, lfo2: wash, g };
+  },
+  startBrown() {
+    this.unlock();
+    if (!this.ctx || this.rain) return;
+    const src = this.ctx.createBufferSource(); src.buffer = this.brownBuffer(); src.loop = true;
+    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240; lp.Q.value = 0.3;
+    const g = this.ctx.createGain(); g.gain.value = 0.2;
+    src.connect(lp); lp.connect(g); g.connect(this.master || this.ctx.destination);
+    src.start();
+    this.rain = { src, g };
+  },
+  startAmb() {
+    const k = S.settings.sound;
+    if (k === 'rain') this.startRain();
+    else if (k === 'ocean') this.startOcean();
+    else if (k === 'brown') this.startBrown();
+  },
+  stopAmb() {
+    if (!this.rain) return;
+    try { this.rain.src.stop(); if (this.rain.lfo) this.rain.lfo.stop(); if (this.rain.lfo2) this.rain.lfo2.stop(); } catch (e) {}
+    this.rain = null;
+  },
+};
+/* continuous background scapes (rain / ocean / brown) vs one-shot chimes */
+function ambOn() { return ['rain', 'ocean', 'brown'].indexOf(S.settings.sound) >= 0; }
+
+/* ---------- android bridge (graceful no-op on the web) ---------- */
+const Bridge = {
+  get ok() { return typeof window.AndroidBridge !== 'undefined'; },
+  keepAwake(on) { if (this.ok) { try { window.AndroidBridge.keepAwake(!!on); } catch (e) {} } },
+  notifyAt(ms, title, text) { if (this.ok) { try { window.AndroidBridge.notifyAt(ms, title, text); } catch (e) {} } },
+  cancelNotify() { if (this.ok) { try { window.AndroidBridge.cancelNotify(); } catch (e) {} } },
+  vibrate(ms) { if (this.ok && !document.hidden) { try { window.AndroidBridge.vibrate(ms); } catch (e) {} } },
+  askNotifPermission() { if (this.ok) { try { window.AndroidBridge.requestNotifPermission(); } catch (e) {} } },
+  exportData(json) { if (this.ok) { try { window.AndroidBridge.exportData(json); return true; } catch (e) {} } return false; },
+  /* app shield */
+  getInstalledApps() { if (this.ok) { try { return window.AndroidBridge.getInstalledApps(); } catch (e) {} } return null; },
+  hasUsageAccess() { if (this.ok) { try { return !!window.AndroidBridge.hasUsageAccess(); } catch (e) {} } return false; },
+  openUsageAccessSettings() { if (this.ok) { try { window.AndroidBridge.openUsageAccessSettings(); } catch (e) {} } },
+  canOverlay() { if (this.ok) { try { return !!window.AndroidBridge.canOverlay(); } catch (e) {} } return false; },
+  requestOverlayPermission() { if (this.ok) { try { window.AndroidBridge.requestOverlayPermission(); } catch (e) {} } },
+  setBlockSession(active, endMs, pkgs, strict) {
+    if (this.ok) { try { window.AndroidBridge.setBlockSession(!!active, endMs || 0, JSON.stringify(pkgs || []), !!strict); } catch (e) {} }
+  },
+  setSchedule(enabled, days, startMin, endMin, strict) {
+    if (this.ok) { try { window.AndroidBridge.setSchedule(!!enabled, JSON.stringify(days || []), startMin | 0, endMin | 0, !!strict); } catch (e) {} }
+  },
+  pauseShield(untilMs) { if (this.ok) { try { window.AndroidBridge.pauseShield(untilMs || 0); } catch (e) {} } },
+  resumeShield() { if (this.ok) { try { window.AndroidBridge.resumeShield(); } catch (e) {} } },
+  getShieldState() { if (this.ok) { try { return window.AndroidBridge.getShieldState(); } catch (e) {} } return null; },
+  getBlockLog() { if (this.ok) { try { return window.AndroidBridge.getBlockLog(); } catch (e) {} } return null; },
+  clearBlockLog() { if (this.ok) { try { window.AndroidBridge.clearBlockLog(); } catch (e) {} } },
+  setQuickBlock(untilMs, pkgs) {
+    if (this.ok) { try { window.AndroidBridge.setQuickBlock(untilMs || 0, JSON.stringify(pkgs || [])); } catch (e) {} }
+  },
+  setLimits(limits) {
+    if (this.ok) { try { window.AndroidBridge.setLimits(JSON.stringify(limits || {})); } catch (e) {} }
+  },
+  setReelsOnly(pkgs) {
+    if (this.ok) { try { window.AndroidBridge.setReelsOnly(JSON.stringify(pkgs || [])); } catch (e) {} }
+  },
+  setTrustedApps(pkgs) {
+    if (this.ok) { try { window.AndroidBridge.setTrustedApps(JSON.stringify(pkgs || [])); } catch (e) {} }
+  },
+  getTrustedApps() { if (this.ok) { try { return window.AndroidBridge.getTrustedApps(); } catch (e) {} } return null; },
+  setTheme(t) { if (this.ok) { try { window.AndroidBridge.setTheme(String(t || 'aurora')); } catch (e) {} } },
+  isReelsShieldEnabled() { if (this.ok) { try { return !!window.AndroidBridge.isReelsShieldEnabled(); } catch (e) {} } return false; },
+  openAccessibilitySettings() { if (this.ok) { try { window.AndroidBridge.openAccessibilitySettings(); } catch (e) {} } },
+  getReelsDiag() { if (this.ok) { try { return window.AndroidBridge.getReelsDiag(); } catch (e) {} } return null; },
+  setReelsDeep(on) { if (this.ok) { try { window.AndroidBridge.setReelsDeep(!!on); } catch (e) {} } },
+  clearReelsDiag() { if (this.ok) { try { window.AndroidBridge.clearReelsDiag(); } catch (e) {} } },
+};
+let wakeLock = null;
+async function acquireWake() {
+  if (!S.settings.keepAwake) return;
+  Bridge.keepAwake(true);
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+function releaseWake() {
+  Bridge.keepAwake(false);
+  try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {}
+}
+
+/* ---------- app shield: real app blocking (android only) ---------- */
+const SUGGESTED_APPS = [
+  ['com.instagram.android', 'Instagram'], ['com.google.android.youtube', 'YouTube'],
+  ['com.zhiliaoapp.musically', 'TikTok'], ['com.twitter.android', 'X'],
+  ['com.snapchat.android', 'Snapchat'], ['com.reddit.frontpage', 'Reddit'],
+  ['com.facebook.katana', 'Facebook'], ['com.whatsapp', 'WhatsApp'],
+];
+/* apps whose Reels tab the reels shield can block (accessibility-based) */
+const REELS_APPS = [
+  ['com.instagram.android', 'Instagram', 'Blocks Reels — the tab and ones opened from the feed'],
+  ['com.facebook.katana', 'Facebook', 'Blocks Reels & Video — the tab and ones opened from the feed'],
+];
+const Shield = {
+  apps: [], appsLoaded: false,
+  entries: [], count: 0,
+  pauseUntil: 0, usage: {}, usageDay: '',
+  perms: { usage: false, overlay: false },
+  a11y: false, /* the Reels Shield accessibility service is on */
+  diag: null,  /* reels detection log — evidence for tuning (android only) */
+  get ready() { return Bridge.ok && this.perms.usage && this.perms.overlay; },
+  refreshPerms() {
+    if (!Bridge.ok) return;
+    this.perms.usage = Bridge.hasUsageAccess();
+    this.perms.overlay = Bridge.canOverlay();
+    this.a11y = Bridge.isReelsShieldEnabled();
+  },
+  loadDiag() {
+    const raw = Bridge.getReelsDiag();
+    if (raw) { try { this.diag = JSON.parse(raw); } catch (e) { /* keep previous */ } }
+    else this.diag = null;
+  },
+  loadApps() {
+    const raw = Bridge.getInstalledApps();
+    if (raw) { try { this.apps = JSON.parse(raw); } catch (e) { this.apps = []; } }
+    else this.apps = SUGGESTED_APPS.map(x => ({ p: x[0], n: x[1], i: '' })); /* web preview demo list */
+    this.appsLoaded = true;
+  },
+  loadLog() {
+    const raw = Bridge.getBlockLog();
+    if (raw) {
+      try { const o = JSON.parse(raw); this.entries = o.entries || []; this.count = o.count || 0; }
+      catch (e) { /* keep previous */ }
+    }
+  },
+  loadState() {
+    const raw = Bridge.getShieldState();
+    if (raw) {
+      try {
+        const o = JSON.parse(raw);
+        this.pauseUntil = o.pauseUntil || 0;
+        if (o.quickUntil) S.quick.until = Math.max(S.quick.until || 0, o.quickUntil);
+        if (o.usage) { this.usage = o.usage.u || {}; this.usageDay = o.usage.day || ''; }
+      } catch (e) { /* keep */ }
+    }
+    S.pauseUntil = Math.max(S.pauseUntil || 0, this.pauseUntil);
+  },
+  appInfo(pkg) { return this.apps.find(a => a.p === pkg) || null; },
+  icon(pkg) { const a = this.appInfo(pkg); return a ? a.i : ''; },
+  todayCount() { const k = dayKey(Date.now()); return this.entries.filter(e => dayKey(e.t) === k).length; },
+};
+function shieldArmed() {
+  const t = S.timer;
+  return !!(t && t.running && !t.paused && t.phase === 'focus' && S.blockedApps.length);
+}
+
+/* ---------- scheduled blocking (weekly windows, IST) ---------- */
+const DAY_L = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+function istNowMin() { const p = istParts(Date.now()); return p.h * 60 + p.m; }
+function istDow() { const wd = istParts(Date.now()).wd; return wd === 0 ? 6 : wd - 1; } /* 0=Mon..6=Sun */
+function schedState() {
+  const sc = S.schedule, now = Date.now();
+  const paused = (S.pauseUntil || 0) > now;
+  const min = istNowMin(), dow = istDow();
+  const s = hmToMin(sc.start), e = hmToMin(sc.end), over = s > e;
+  const inWin = over ? (min >= s || min < e) : (min >= s && min < e);
+  /* an overnight window before dawn belongs to the day it started */
+  const dayOk = over ? (min >= s ? !!sc.days[dow] : !!sc.days[(dow + 6) % 7]) : !!sc.days[dow];
+  const enabled = !!sc.enabled && S.blockedApps.length > 0 && Bridge.ok && Shield.ready;
+  return {
+    enabled, paused, pauseLeft: paused ? Math.max(0, S.pauseUntil - now) : 0,
+    active: enabled && !paused && dayOk && inWin,
+    start: sc.start, end: sc.end,
+    pausesUsed: S.pauses.filter(p => dayKey(p.t) === dayKey(now)).length,
+  };
+}
+function schedDaysLabel() {
+  const d = S.schedule.days;
+  if (d.every(x => x)) return 'every day';
+  if (d.slice(0, 5).every(x => x) && !d[5] && !d[6]) return 'weekdays';
+  if (!d.slice(0, 5).some(x => x) && d[5] && d[6]) return 'weekends';
+  const on = DAY_L.filter((_, i) => d[i]);
+  return on.length ? on.join(' · ') : 'no days';
+}
+
+/* ---------- quick block: instant app timer (refocus-style) ---------- */
+function quickState() {
+  const until = (S.quick && S.quick.until) || 0;
+  const active = until > Date.now() && S.blockedApps.length > 0;
+  return { until, active, left: active ? until - Date.now() : 0 };
+}
+function armQuick(min) {
+  if (!S.blockedApps.length) { toast('Add blocked apps first'); return; }
+  S.quick.until = Date.now() + min * 60000;
+  save();
+  Bridge.setQuickBlock(S.quick.until, S.blockedApps.map(a => a.pkg));
+  renderView();
+  toast('Locked for ' + min + ' min — every blocked app');
+}
+function syncLimits() { Bridge.setLimits(S.limits || {}); }
+function syncReels() { Bridge.setReelsOnly(S.reelsOnly || []); }
+function syncTrusted() { Bridge.setTrustedApps(S.trusted || []); }
+function syncShield() {
+  const armed = shieldArmed();
+  Bridge.setBlockSession(armed, armed ? S.timer.endMs : 0,
+    S.blockedApps.map(a => a.pkg), armed ? !!S.timer.strict : false);
+  const sc = S.schedule;
+  Bridge.setSchedule(!!sc.enabled, sc.days.map(x => x ? 1 : 0),
+    hmToMin(sc.start), hmToMin(sc.end), !!sc.strict);
+  Bridge.setQuickBlock(S.quick.until || 0, S.blockedApps.map(a => a.pkg));
+  syncLimits();
+  syncReels();
+  syncTrusted();
+}
+/* strict give-up: 3s hold (done) -> PIN if set -> 16-piece jigsaw -> abandon */
+function requestStrictExit() {
+  const go = () => openPuzzle(abandon);
+  if (S.settings.pinHash) openPinSheet('PIN required', 'Enter your PIN to give up this strict session.', go);
+  else go();
+}
+/* native side reports: the user hit the shield and came back */
+window.__onBlockedAttempt = function (pkg, label) {
+  Shield.loadLog();
+  Bridge.vibrate(140);
+  Sound.unlock();
+  Sound.startBlip();
+  toast('Shield held — ' + (label || pkg) + ' stayed closed');
+  if (TAB !== 'timer' && !document.body.classList.contains('zen')) TAB = 'timer';
+  renderAll();
+};
+
+/* ---------- stats (IST day boundaries) ---------- */
+function sessionsOn(key) { return S.sessions.filter(s => dayKey(s.endMs) === key); }
+function focusCompleted(s) { return s.type === 'focus' && s.status === 'completed'; }
+function todayMinutes() {
+  return sessionsOn(dayKey(Date.now())).filter(focusCompleted)
+    .reduce((a, s) => a + s.actualSec, 0) / 60;
+}
+function computeStreak() {
+  const done = new Set(S.sessions.filter(focusCompleted).map(s => dayKey(s.endMs)));
+  let t = Date.now(), n = 0;
+  if (!done.has(dayKey(t))) t -= DAY;   /* today not done yet: streak may still be alive from yesterday */
+  while (done.has(dayKey(t))) { n++; t -= DAY; }
+  return n;
+}
+function bestStreak() {
+  const days = Array.from(new Set(S.sessions.filter(focusCompleted).map(s => dayKey(s.endMs)))).sort();
+  let best = 0, cur = 0, prev = null;
+  for (const d of days) {
+    if (prev) { const pd = new Date(prev + 'T00:00:00Z').getTime(), cd = new Date(d + 'T00:00:00Z').getTime();
+      cur = (cd - pd <= DAY + 1000) ? cur + 1 : 1; }
+    else cur = 1;
+    if (cur > best) best = cur; prev = d;
+  }
+  return best;
+}
+function weekData() {
+  const out = [];
+  for (let i = 6; i >= 0; i--) {
+    const ms = Date.now() - i * DAY, k = dayKey(ms);
+    const min = sessionsOn(k).filter(focusCompleted).reduce((a, s) => a + s.actualSec, 0) / 60;
+    out.push({ k, min: Math.round(min), wd: istParts(ms).wd, today: i === 0 });
+  }
+  return out;
+}
+/* v2.6: this week vs the seven days before it */
+function weekReview() {
+  const now = Date.now();
+  let minThis = 0, minLast = 0, doneThis = 0, doneLast = 0;
+  for (let i = 0; i < 7; i++) {
+    const st = sessionsOn(dayKey(now - i * DAY)).filter(focusCompleted);
+    const sl = sessionsOn(dayKey(now - (i + 7) * DAY)).filter(focusCompleted);
+    minThis += st.reduce((a, s) => a + s.actualSec, 0) / 60;
+    minLast += sl.reduce((a, s) => a + s.actualSec, 0) / 60;
+    doneThis += st.length; doneLast += sl.length;
+  }
+  const wk = weekData();
+  let best = null;
+  wk.forEach(d => { if (d.min > 0 && (!best || d.min > best.min)) best = d; });
+  const blockedThis = Bridge.ok ? Shield.entries.filter(e => e.t > now - 7 * DAY).length : 0;
+  return { minThis: Math.round(minThis), minLast: Math.round(minLast),
+           doneThis, doneLast, best, blockedThis };
+}
+/* v2.6: every "(Reels)" entry in the block log is one dodge */
+const DODGE_MIN = 5; /* est. minutes of scrolling avoided per dodge */
+function isReelsEntry(e) { return /\(Reels\)\s*$/.test(String(e.n || '')); }
+function reelsDodgedAll() { return Shield.entries.filter(isReelsEntry).length; }
+function reelsDodgedToday() {
+  const k = dayKey(Date.now());
+  return Shield.entries.filter(e => dayKey(e.t) === k && isReelsEntry(e)).length;
+}
+function totals() {
+  const f = S.sessions.filter(x => x.type === 'focus');
+  const done = f.filter(focusCompleted), lost = f.filter(x => x.status === 'abandoned');
+  return {
+    doneCount: done.length,
+    abandoned: lost.length,
+    doneSec: done.reduce((a, s) => a + s.actualSec, 0),
+    lostSec: lost.reduce((a, s) => a + s.actualSec, 0),
+  };
+}
+
+/* ---------- pomodoro engine ---------- */
+const PHASE_NAME = { focus: 'Deep Focus', short: 'Short Break', long: 'Long Break' };
+function phaseMin(p) { return p === 'focus' ? S.settings.focusMin : p === 'short' ? S.settings.shortMin : S.settings.longMin; }
+function nextPhase(phase, round) {
+  if (phase === 'focus')
+    return round < S.settings.rounds ? { phase: 'short', round } : { phase: 'long', round };
+  if (phase === 'short') return { phase: 'focus', round: round + 1 };
+  return { phase: 'focus', round: 1 };
+}
+function elapsedMs(t) {
+  const now = t.paused && t.pausedAt ? t.pausedAt : Math.min(Date.now(), t.endMs);
+  return Math.max(0, now - t.startMs - (t.pausedAccum || 0));
+}
+function recordFocus(status, t, endMs) {
+  S.sessions.push({
+    id: uid(), type: 'focus', subject: t.subject || '',
+    plannedSec: t.plannedSec, actualSec: Math.min(t.plannedSec, Math.round(elapsedMs(t) / 1000)),
+    status, strict: !!t.strict, startMs: t.startMs, endMs,
+  });
+  save();
+}
+function notifyText(phase, round) {
+  if (phase === 'focus') return ['Focus session complete', 'Round ' + round + ' done. Nice work.'];
+  if (phase === 'short') return ['Break over', 'Ready for round ' + (round + 1) + '?'];
+  return ['Long break over', 'Fresh cycle ahead. Round 1 awaits.'];
+}
+function startPhase(phase, opts) {
+  opts = opts || {};
+  const t = S.timer;
+  const round = opts.round != null ? opts.round : t.round;
+  const durMs = phaseMin(phase) * 60000;
+  const now = Date.now();
+  S.timer = {
+    phase, round, running: true, paused: false,
+    startMs: now, endMs: now + durMs, pausedAt: 0, pausedAccum: 0,
+    plannedSec: durMs / 1000,
+    strict: phase === 'focus' ? !!(opts.strict != null ? opts.strict : S.settings.strictDefault) : false,
+    subject: phase === 'focus' ? (opts.subject || '') : ((t && t.subject) || ''),
+  };
+  save();
+  Sound.startBlip();
+  if (phase === 'focus' && ambOn()) Sound.startAmb();
+  const nt = notifyText(phase, S.timer.round);
+  Bridge.notifyAt(S.timer.endMs + 1500, nt[0], nt[1]);
+  acquireWake();
+  syncShield();
+  renderAll();
+}
+function completePhase(away) {
+  const t = S.timer;
+  if (!t || !t.running) return;
+  const wasFocus = t.phase === 'focus';
+  const endMs = Math.max(t.endMs, t.startMs);
+  if (wasFocus) recordFocus('completed', t, endMs);
+  Bridge.cancelNotify();
+  Sound.stopAmb();
+  releaseWake();
+  const nxt = nextPhase(t.phase, t.round);
+  S.timer = { phase: nxt.phase, round: nxt.round, running: false, paused: false, pending: true };
+  save();
+  syncShield();
+  renderAll();
+  if (wasFocus) {
+    Sound.complete();
+    Bridge.vibrate(220);
+    confetti();
+    openCelebrate(away);
+  } else {
+    Sound.breakOver();
+    Bridge.vibrate(120);
+    openBreakOver();
+  }
+}
+function abandon() {
+  const t = S.timer;
+  if (!t || !t.running || t.phase !== 'focus') return;
+  recordFocus('abandoned', t, Date.now());
+  const round = t.round;
+  Bridge.cancelNotify();
+  Sound.stopAmb();
+  Sound.fail();
+  Bridge.vibrate(90);
+  releaseWake();
+  S.timer = { phase: 'focus', round, running: false, paused: false };
+  save();
+  syncShield();
+  renderAll();
+  closeOverlays();
+  openAbandonedNote(Math.round(elapsedMs(t) / 60000), t.plannedSec / 60);
+}
+function pauseTimer() {
+  const t = S.timer;
+  if (!t.running || t.paused || t.phase !== 'focus') return;
+  t.paused = true; t.pausedAt = Date.now();
+  Bridge.cancelNotify(); Sound.stopAmb(); releaseWake();
+  save(); syncShield(); renderAll();
+}
+function resumeTimer() {
+  const t = S.timer;
+  if (!t.running || !t.paused) return;
+  const now = Date.now();
+  t.pausedAccum = (t.pausedAccum || 0) + (now - t.pausedAt);
+  t.endMs += now - t.pausedAt;
+  t.paused = false; t.pausedAt = 0;
+  const nt = notifyText(t.phase, t.round);
+  Bridge.notifyAt(t.endMs + 1500, nt[0], nt[1]);
+  if (t.phase === 'focus' && ambOn()) Sound.startAmb();
+  acquireWake();
+  save(); syncShield(); renderAll();
+}
+function skipBreak() {
+  const t = S.timer;
+  if (!t.running || t.phase === 'focus') return;
+  Bridge.cancelNotify(); Sound.stopAmb(); releaseWake();
+  const nxt = nextPhase(t.phase, t.round);
+  S.timer = { phase: nxt.phase, round: nxt.round, running: false, paused: false, pending: true };
+  save(); renderAll();
+  toast('Break skipped');
+}
+/* reconcile a session that finished while the app was frozen/killed */
+function reconcile() {
+  const t = S.timer;
+  if (t && t.running && !t.paused && Date.now() >= t.endMs) completePhase(true);
+}
+
+/* ---------- rendering: shell ---------- */
+let TAB = 'timer';
+function renderHeader() {
+  const streak = computeStreak();
+  $('#hdr').innerHTML =
+    '<div class="logo">' + I.leaf + '</div>' +
+    '<div class="brand">ReCalm</div><div class="spacer"></div>' +
+    (streak > 0 ? '<button class="streak-chip" data-action="tab" data-v="stats" aria-label="Streak: ' + streak + ' days">' +
+      I.flame + '<span>' + streak + '</span></button>' : '') +
+    '<button class="iconbtn" data-action="zen" aria-label="Zen mode">' + I.expand + '</button>';
+}
+function renderTabs() {
+  const tabs = [
+    ['timer', 'Timer', I.timer], ['stats', 'Stats', I.chart],
+    ['guard', 'Guard', I.shield], ['settings', 'Settings', I.sliders],
+  ];
+  $('#tabbar').innerHTML = tabs.map(([id, label, ic]) =>
+    '<button class="tab ' + (TAB === id ? 'active' : '') + '" data-action="tab" data-v="' + id + '" aria-label="' + label + '">' +
+    ic + '<span>' + label + '</span></button>').join('');
+}
+function renderAll() { renderHeader(); renderTabs(); renderView(); updateTimerDisplay(); }
+
+/* ---------- rendering: timer view ---------- */
+function roundDots(t) {
+  let html = '';
+  const r = S.settings.rounds;
+  const doneCount = t.phase === 'focus' ? t.round - 1 : t.round;
+  for (let i = 1; i <= r; i++) {
+    const cls = (i < doneCount || (i === doneCount && t.phase !== 'focus')) ? 'done'
+      : (i === t.round && t.phase === 'focus') ? 'cur' : '';
+    html += '<span class="rdot ' + cls + '"></span>';
+  }
+  return html;
+}
+function renderTimer() {
+  const t = S.timer;
+  const st = S.settings;
+  const running = t.running;
+  const idle = !running;
+  const phase = t.phase;
+  const total = phaseMin(phase) * 60;
+  const sub = running
+    ? (phase === 'focus'
+        ? (t.paused ? 'Paused · ' + fmtDur(t.plannedSec) + ' planned' : 'Round ' + t.round + ' of ' + st.rounds)
+        : 'Break · then round ' + (phase === 'long' ? 1 : t.round + 1))
+    : (t.pending
+        ? (phase === 'focus' ? 'Next: focus round ' + t.round : 'Next: ' + PHASE_NAME[phase].toLowerCase())
+        : 'Round ' + t.round + ' of ' + st.rounds);
+  let html = '<div class="timer-wrap">' +
+    '<div class="phase-line"><span class="phase-name">' + PHASE_NAME[phase] + '</span>' +
+    (phase === 'focus' && running && t.strict ? '<span class="badge-strict">' + I.shield + 'STRICT</span>' : '') +
+    '</div>' +
+    '<div class="round-dots">' + roundDots(t) + '</div>' +
+    '<div class="ring-box ' + (phase !== 'focus' ? 'break' : '') + '">' +
+      '<svg viewBox="0 0 280 280" aria-hidden="true">' +
+        '<defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/></linearGradient></defs>' +
+        '<circle class="ring-bg" cx="140" cy="140" r="124"/>' +
+        '<circle id="ring-fg" class="ring-fg" cx="140" cy="140" r="124" stroke-dasharray="779.1" stroke-dashoffset="0"/>' +
+      '</svg>' +
+      '<div class="ring-mid"><div id="time-txt">' + fmtClock(idle ? total : (t.endMs - Date.now()) / 1000) + '</div>' +
+      '<div id="time-sub">' + esc(sub) + '</div></div>' +
+    '</div>';
+  if (running && t.subject && phase === 'focus')
+    html += '<div class="subject-chip">' + esc(t.subject) + '</div>';
+  if (running && phase === 'focus' && S.blockedApps.length && Bridge.ok) {
+    const bn = S.blockedApps.length;
+    html += Shield.ready
+      ? '<button class="shield-chip" data-action="tab" data-v="guard">' + I.shield + 'Shield on · ' + bn + ' app' + (bn === 1 ? '' : 's') + ' blocked</button>'
+      : '<button class="shield-chip warn" data-action="tab" data-v="guard">' + I.shield + 'Shield setup needed · ' + bn + ' app' + (bn === 1 ? '' : 's') + '</button>';
+  }
+  if (running && phase === 'focus' && S.blocklist.length)
+    html += '<div class="avoid-strip">' + S.blocklist.slice(0, 3).map(b =>
+      '<span class="chip">' + esc(b.label) + '</span>').join('') +
+      (S.blocklist.length > 3 ? '<span class="chip">+' + (S.blocklist.length - 3) + '</span>' : '') + '</div>';
+
+  if (idle) {
+    if (schedState().active) {
+      html += '<button class="shield-chip" data-action="tab" data-v="guard">' + I.shield +
+        'Scheduled shield on · until ' + esc(S.schedule.end) + '</button>';
+    }
+    if (quickState().active) {
+      html += '<button class="shield-chip" data-action="tab" data-v="guard">' + I.shield +
+        'Quick block on · ' + fmtDur(quickState().left / 1000) + ' left</button>';
+    }
+    const isBreakNext = phase !== 'focus';
+    html += '<div class="dur-row">' + [15, 25, 45, 60].map(m =>
+      '<button class="chip ' + (!isBreakNext && st.focusMin === m ? 'on' : '') + '" data-action="setfocus" data-v="' + m + '">' + m + ' min</button>').join('') + '</div>';
+    html += '<div class="ctrl">' +
+      (isBreakNext
+        ? '<button class="btn primary" data-action="startbreak">' + I.play + 'Start ' + PHASE_NAME[phase] + ' · ' + phaseMin(phase) + ' min</button>'
+        : '<button class="btn primary" data-action="startfocus">' + I.play + 'Start Focus · ' + st.focusMin + ' min</button>') +
+      '</div>';
+    const tm = Math.round(todayMinutes());
+    if (tm > 0 || S.sessions.length > 0) {
+      const pct = clamp(Math.round(tm / st.dailyGoalMin * 100), 0, 100);
+      html += '<div class="today-strip"><div class="row"><span class="muted" style="font-weight:600">Today</span>' +
+        '<span style="font-weight:700">' + tm + ' / ' + st.dailyGoalMin + ' min</span></div>' +
+        '<div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+    } else {
+      html += '<p class="muted" style="margin-top:26px;font-size:13px;text-align:center;line-height:1.6">' +
+        'One completed session starts your streak.<br>Strict mode has no pause — quitting needs a<br>3-second hold, a 16-piece puzzle and is logged honestly.</p>';
+    }
+  } else {
+    html += '<div class="ctrl">';
+    if (phase !== 'focus') {
+      html += '<button class="btn ghost" data-action="skipbreak">' + I.skip + 'Skip break</button>';
+    } else if (t.strict) {
+      html += '<button class="btn danger hold-btn" id="giveup" aria-label="Hold for 3 seconds to give up">' +
+        '<span class="fill"></span><span class="lbl">' + I.flag + 'Give up — hold 3s</span></button>';
+    } else {
+      if (!t.paused) html += '<button class="btn ghost" data-action="pause">' + I.pause + 'Pause</button>';
+      else html += '<button class="btn primary" data-action="resume">' + I.play + 'Resume</button>';
+      html += '<button class="btn danger" data-action="endearly">End early</button>';
+    }
+    html += '</div>';
+  }
+  html += '<p id="zen-hint" class="muted" style="margin-top:22px;font-size:11.5px;letter-spacing:.05em">TAP ANYWHERE TO HIDE CONTROLS</p>';
+  html += '</div>';
+  $('#view').innerHTML = html;
+  bindHold();
+}
+/* hold-to-give-up (3 seconds, honest) */
+function bindHold() {
+  const btn = $('#giveup');
+  if (!btn) return;
+  const fill = $('.fill', btn);
+  let timer = null, start = 0;
+  const stop = () => { if (timer) { cancelAnimationFrame(timer); timer = null; } fill.style.width = '0%'; };
+  const step = () => {
+    const p = Math.min(1, (Date.now() - start) / 3000);
+    fill.style.width = (p * 100) + '%';
+    if (p >= 1) { stop(); requestStrictExit(); return; }
+    timer = requestAnimationFrame(step);
+  };
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    start = Date.now();
+    timer = requestAnimationFrame(step);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => btn.addEventListener(ev, stop));
+}
+
+/* ---------- rendering: stats view ---------- */
+function renderStats() {
+  if (Bridge.ok) Shield.loadLog();
+  const st = S.settings, t = totals(), wk = weekData();
+  const tm = Math.round(todayMinutes());
+  const pct = clamp(Math.round(tm / st.dailyGoalMin * 100), 0, 100);
+  const todaySess = sessionsOn(dayKey(Date.now()));
+  const doneToday = todaySess.filter(focusCompleted).length;
+  const lostToday = todaySess.filter(x => x.status === 'abandoned').length;
+  const maxW = Math.max(1, ...wk.map(d => d.min));
+  let html = '<p class="h-label">Today</p>' +
+    '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px">' +
+      '<span style="font-weight:700;font-size:14px">' + tm + ' of ' + st.dailyGoalMin + ' min</span>' +
+      '<span class="muted" style="font-size:12.5px">' + pct + '% of goal</span></div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="row" style="gap:16px;margin-top:12px;font-size:12.5px">' +
+      '<span class="muted">' + doneToday + ' completed today</span>' +
+      (lostToday ? '<span style="color:var(--danger)">' + lostToday + ' abandoned</span>' : '') +
+      (Shield.todayCount() ? '<span style="color:var(--accent)">' + Shield.todayCount() + ' blocked</span>' : '') +
+    '</div></div>';
+  html += '<p class="h-label">Streak</p><div class="stat-grid">' +
+    '<div class="card stat-card"><div class="k">Current</div><div class="v">' + daysLabel(computeStreak()) + '</div>' +
+    '<div class="s">completed sessions per day (IST)</div></div>' +
+    '<div class="card stat-card"><div class="k">Best</div><div class="v">' + daysLabel(bestStreak()) + '</div>' +
+    '<div class="s">keep it alive</div></div></div>';
+  html += '<p class="h-label">Last 7 days</p><div class="card"><div class="week">' +
+    wk.map(d => '<div class="wcol ' + (d.today ? 'today' : '') + '" title="' + d.min + ' min">' +
+      '<div class="wbar"><i style="height:' + Math.max(2, Math.round(d.min / maxW * 100)) + '%"></i></div>' +
+      '<span class="wl">' + WD[d.wd] + '</span></div>').join('') + '</div></div>';
+  /* v2.6: the week in review — vs the seven days before it */
+  const wr = weekReview();
+  const delta = wr.minThis - wr.minLast;
+  html += '<p class="h-label">This week</p><div class="stat-grid">' +
+    '<div class="card stat-card"><div class="k">Focused</div><div class="v">' + fmtDur(wr.minThis * 60) + '</div>' +
+      '<div class="s">' + (wr.minLast
+        ? (delta >= 0 ? '▲ ' : '▼ ') + Math.abs(Math.round(delta / wr.minLast * 100)) + '% vs last week'
+        : 'first week on record') + '</div></div>' +
+    '<div class="card stat-card"><div class="k">Rounds</div><div class="v">' + wr.doneThis + '</div>' +
+      '<div class="s">' + (wr.minLast || wr.doneLast
+        ? (wr.doneThis >= wr.doneLast ? '▲ ' : '▼ ') + Math.abs(wr.doneThis - wr.doneLast) + ' vs last week'
+        : 'keep them coming') + '</div></div>' +
+    '<div class="card stat-card"><div class="k">Best day</div><div class="v">' +
+      (wr.best ? DAY_L[wr.best.wd === 0 ? 6 : wr.best.wd - 1] : '—') + '</div>' +
+      '<div class="s">' + (wr.best ? wr.best.min + ' min focused' : 'no focus yet') + '</div></div>' +
+    (Bridge.ok && Shield.entries.length
+      ? '<div class="card stat-card"><div class="k">Blocked</div><div class="v">' + wr.blockedThis + '</div><div class="s">distraction attempts this week</div></div>' : '') +
+    '</div>';
+  html += '<p class="h-label">All time</p><div class="stat-grid">' +
+    '<div class="card stat-card"><div class="k">Focused</div><div class="v">' + fmtDur(t.doneSec) + '</div></div>' +
+    '<div class="card stat-card"><div class="k">Sessions</div><div class="v">' + t.doneCount + '</div><div class="s">completed</div></div>' +
+    '<div class="card stat-card"><div class="k">Abandoned</div><div class="v">' + t.abandoned + '</div><div class="s">gave up early</div></div>' +
+    '<div class="card stat-card"><div class="k">Lost time</div><div class="v">' + fmtDur(t.lostSec) + '</div><div class="s">in abandoned sessions</div></div>' +
+    (Bridge.ok && Shield.count ? '<div class="card stat-card"><div class="k">Blocked</div><div class="v">' + Shield.count + '</div><div class="s">distraction attempts stopped</div></div>' : '') +
+    (function () { /* v2.6: reels dodged + scrolling avoided */
+      const d = reelsDodgedAll();
+      return Bridge.ok && d
+        ? '<div class="card stat-card"><div class="k">Reels dodged</div><div class="v">' + d + '</div>' +
+          '<div class="s">~' + fmtDur(d * DODGE_MIN * 60) + ' of scrolling skipped</div></div>' : '';
+    })() +
+    '</div>';
+
+  /* history */
+  html += '<p class="h-label">History</p>';
+  if (!S.sessions.length) {
+    html += '<div class="card"><p class="empty">No sessions yet.<br>Your first completed focus round starts the streak.</p></div>';
+  } else {
+    const groups = {};
+    S.sessions.slice().sort((a, b) => b.endMs - a.endMs).forEach(s => {
+      const k = dayKey(s.endMs);
+      (groups[k] = groups[k] || []).push(s);
+    });
+    Object.keys(groups).sort().reverse().forEach(k => {
+      html += '<p class="hist-group">' + dayLabel(groups[k][0].endMs) + '</p>';
+      html += groups[k].map(s => {
+        const ok = s.status === 'completed';
+        const title = s.subject ? esc(s.subject) : 'Focus session';
+        const det = ok
+          ? fmtDur(s.actualSec) + ' completed'
+          : Math.round(s.actualSec / 60) + ' of ' + Math.round(s.plannedSec / 60) + ' min · abandoned';
+        return '<div class="hist-row"><div class="st ' + (ok ? 'ok' : 'bad') + '">' + (ok ? I.check : I.x) + '</div>' +
+          '<div class="grow"><div class="t">' + title + (s.strict ? '<span class="mini-badge strict">STRICT</span>' : '') + '</div>' +
+          '<div class="d">' + det + '</div>' +
+          (s.note ? '<div class="d" style="font-style:italic;opacity:.85">"' + esc(s.note) + '"</div>' : '') + '</div>' +
+          '<div class="when">' + clockHM(s.endMs) + '</div></div>';
+      }).join('');
+    });
+  }
+  $('#view').innerHTML = html;
+}
+
+/* ---------- rendering: guard view ---------- */
+function permRow(ok, t, d, action) {
+  return '<div class="perm-row"><div class="ic ' + (ok ? 'ok' : '') + '">' + (ok ? I.check : I.shield) + '</div>' +
+    '<div class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></div>' +
+    (ok ? '<span class="muted" style="font-size:12px;font-weight:700;flex:none">Granted</span>'
+        : '<button class="perm-grant" data-action="' + action + '">Grant</button>') + '</div>';
+}
+function appAvatar(pkg, label, size) {
+  const ic = Shield.icon(pkg);
+  if (ic) return '<img src="' + ic + '" alt="" style="width:' + size + 'px;height:' + size + 'px">';
+  return '<div class="av" style="width:' + size + 'px;height:' + size + 'px">' + esc((label || pkg || '?')[0]).toUpperCase() + '</div>';
+}
+function renderGuard() {
+  if (!Shield.appsLoaded) Shield.loadApps();
+  let html = '<div class="card guard-hero">' +
+    '<img src="img/mascot-guard.png" alt="Guard mascot">' +
+    '<div><h3 style="font-size:16px;font-weight:800;margin-bottom:5px">Distraction guard</h3>' +
+    '<p>Block the apps themselves — or just their Reels tab. During focus sessions, opening a blocked app slams a full-screen shield over it — and every attempt is logged.</p></div></div>';
+
+  if (Bridge.ok) {
+    html += '<p class="h-label">App shield</p>';
+    if (!Shield.ready) {
+      html += '<div class="card">' +
+        permRow(Shield.perms.usage, 'Usage access', 'Lets ReCalm notice when a blocked app opens. Required for blocking.', 'grantusage') +
+        permRow(Shield.perms.overlay, 'Display over other apps', 'Lets the block screen cover the blocked app instantly.', 'grantoverlay') +
+        '</div>' +
+        '<p class="muted" style="font-size:12px;margin-top:10px;line-height:1.55">One-time grants. ReCalm only checks apps while your own focus session runs — nothing else, ever.</p>';
+    } else {
+      const todayN = Shield.todayCount();
+      const n = S.blockedApps.length;
+      const ssTop = schedState();
+      const liveNow = shieldArmed() || ssTop.active || quickState().active;
+      html += '<div class="card"><div class="shield-armed">' + I.shield +
+        (liveNow ? 'Shield active · blocking now' : 'Shield armed') + '</div>' +
+        '<p class="muted" style="font-size:12.5px;margin-top:8px;line-height:1.55">' +
+        (n ? n + ' app' + (n === 1 ? '' : 's') + ' will be blocked during focus sessions' +
+            (S.schedule.enabled ? ' and scheduled windows' : '')
+           : 'Ready. Add the apps that steal your focus') +
+        (todayN ? ' · <b style="color:var(--accent)">' + todayN + ' attempt' + (todayN === 1 ? '' : 's') + ' blocked today</b>' : '') +
+        '.</p></div>';
+    }
+    html += '<p class="h-label">Blocked apps · ' + S.blockedApps.length + '</p>';
+    if (!S.blockedApps.length) {
+      html += '<div class="card"><p class="empty">No apps blocked yet.<br>Pick the ones that steal your focus.</p></div>';
+    } else {
+      html += '<div style="margin-bottom:8px">' + S.blockedApps.map(a =>
+        '<div class="app-row">' + appAvatar(a.pkg, a.label, 38) +
+        '<div class="grow"><div class="t">' + esc(a.label) + '</div><div class="d">' + esc(a.pkg) +
+        (S.trusted.indexOf(a.pkg) >= 0 ? ' <span class="trust-flag">· trusted — never blocked</span>' : '') +
+        '</div></div>' +
+        '<button class="iconbtn" data-action="delapp" data-p="' + esc(a.pkg) + '" aria-label="Unblock ' + esc(a.label) + '">' + I.x + '</button></div>').join('') + '</div>';
+    }
+    html += '<button class="btn soft sm" data-action="openpicker">' + I.plus +
+      (S.blockedApps.length ? 'Add or remove apps' : 'Choose apps to block') + '</button>';
+    if (Shield.entries.length) {
+      html += '<p class="h-label">Blocked attempts · ' + Shield.count + ' all time</p>' +
+        '<div class="card">' + Shield.entries.slice().reverse().slice(0, 12).map(e =>
+          '<div class="blocklog-row"><div class="av">' + esc((e.n || e.p || '?')[0]).toUpperCase() + '</div>' +
+          '<div class="grow"><b style="font-size:13px">' + esc(e.n || e.p) + '</b> tried to open</div>' +
+          '<div class="when">' + dayLabel(e.t) + ' · ' + clockHM(e.t) + '</div></div>').join('') +
+        (Shield.count > 12 ? '<p class="muted" style="font-size:11.5px;margin-top:6px">showing the latest 12</p>' : '') +
+        '<button class="btn ghost sm" style="margin-top:10px" data-action="clearlog">Clear log</button></div>';
+    }
+  } else {
+    html += '<p class="h-label">App shield</p>' +
+      '<div class="card"><p class="empty">Real app blocking runs in the Android app.<br>Install ReCalm on your phone to block Instagram, YouTube and the rest.</p></div>';
+  }
+
+  /* trusted apps (v2.8): shields go fully silent — anti-detection */
+  const trustedN = S.trusted.length;
+  html += '<p class="h-label">Trusted apps · ' + trustedN + '</p><div class="card">' +
+    '<p class="muted" style="font-size:12.5px;line-height:1.55">Some apps flag anything that watches or covers them — and call ReCalm a third-party app. Mark those apps trusted and every shield goes fully silent while they are open: no blocking, no screen reading, no overlays, no logs. Trust always wins over the block list, schedules and limits.</p>';
+  if (trustedN) {
+    html += '<div style="margin-top:12px">' + S.trusted.map(pkg => {
+      const info = Shield.appInfo(pkg);
+      const ba = S.blockedApps.find(x => x.pkg === pkg);
+      const name = (info && info.n) || (ba && ba.label) || pkg;
+      const watchedToo = S.blockedApps.some(x => x.pkg === pkg) || S.reelsOnly.indexOf(pkg) >= 0;
+      return '<div class="app-row">' + appAvatar(pkg, name, 38) +
+        '<div class="grow"><div class="t">' + esc(name) + '</div>' +
+        '<div class="d">' + (watchedToo ? 'Trust wins — shields stay silent here' : esc(pkg)) + '</div></div>' +
+        '<button class="trust-btn on" data-action="untrust" data-p="' + esc(pkg) + '" aria-label="Mark ' + esc(name) + ' as not trusted">' + I.check + 'Trusted</button></div>';
+    }).join('') + '</div>' +
+      '<button class="btn soft sm" style="margin-top:6px" data-action="opentrust">' + I.plus + 'Add or remove apps</button>';
+  } else {
+    html += '<button class="btn soft sm" style="margin-top:12px" data-action="opentrust">' + I.plus + 'Choose trusted apps</button>';
+  }
+  if (S.reelsOnly.some(p => S.trusted.indexOf(p) >= 0))
+    html += '<p class="muted" style="font-size:11.5px;margin-top:8px;line-height:1.5">A trusted app with Reels blocking on stays unwatched too — the Reels shield ignores it completely.</p>';
+  if (Bridge.ok && Shield.a11y)
+    html += '<p class="muted" style="font-size:11px;margin-top:8px;line-height:1.5">Still flagged? An app that scans Android\u2019s accessibility list only calms down while the Reels Shield is switched off (Android Settings \u2192 Accessibility) — trust already removes every scan, block and overlay.</p>';
+  if (!Bridge.ok)
+    html += '<p class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.5">Trust runs in the Android app — the web preview shows the controls only.</p>';
+  html += '</div>';
+
+  /* reels shield: block reels everywhere they open, all day (accessibility) */
+  const reelsArmed = S.reelsOnly.length > 0;
+  html += '<p class="h-label">Reels shield</p><div class="card">' +
+    '<p class="muted" style="font-size:12.5px;line-height:1.55">Keep the apps — lose the infinite scroll. Reels get blocked wherever they open: the Reels tab itself, and reels that go full-screen from the feed or a chat. All day long, even outside focus sessions. Everything else stays open.</p>';
+  REELS_APPS.forEach(x => {
+    const pkg = x[0], name = x[1], what = x[2];
+    const on = S.reelsOnly.indexOf(pkg) >= 0;
+    const info = Bridge.ok ? Shield.appInfo(pkg) : { p: pkg, n: name };
+    const missing = Bridge.ok && !info;
+    html += '<div class="set-row">' +
+      '<div class="grow"><div class="row" style="gap:11px">' + appAvatar(pkg, name, 36) +
+        '<div><div class="t">' + esc(name) + (missing ? ' <span class="muted" style="font-size:11px;font-weight:600">· not installed</span>' : '') + '</div>' +
+        '<div class="d">' + esc(what) + ' — the rest of the app stays open.' +
+        (S.trusted.indexOf(pkg) >= 0 ? ' <span class="trust-flag">· trusted — shield silent here</span>' : '') + '</div></div></div></div>' +
+      '<button class="switch ' + (on ? 'on' : '') + '"' + (missing ? ' style="opacity:.35;pointer-events:none"' : '') +
+        ' data-action="reelstoggle" data-p="' + esc(pkg) + '" role="switch" aria-checked="' + on + '" aria-label="Block Reels in ' + esc(name) + '"></button></div>';
+  });
+  if (Bridge.ok && reelsArmed && !Shield.a11y) {
+    html += '<div class="perm-row" style="border-top:1px solid var(--border)">' +
+      '<div class="ic">' + I.shield + '</div>' +
+      '<div class="grow"><div class="t">Accessibility needed</div>' +
+      '<div class="d">Reels blocking reads the screen for these two apps only. Turn on “ReCalm Reels Shield” in Accessibility settings — one time, survives reboots. If Android says “Restricted setting”, first open App info → ⋮ menu → “Allow restricted settings”.</div></div>' +
+      '<button class="perm-grant" data-action="granta11y">Enable</button></div>';
+  } else if (Bridge.ok && reelsArmed && Shield.a11y) {
+    /* v2.6: today's wins — reels dodged + urges outlasted on the sheet */
+    const dToday = reelsDodgedToday();
+    Shield.loadDiag();
+    const surfed = (Shield.diag && Shield.diag.urgesSurfed) || 0;
+    html += '<p class="muted" style="font-size:11.5px;margin-top:10px;color:var(--accent);font-weight:600">Reels Shield is on — detection active.</p>' +
+      (dToday || surfed
+        ? '<div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">' +
+          (dToday ? '<span class="chip on">' + dToday + ' reel' + (dToday === 1 ? '' : 's') + ' dodged today · ~' + (dToday * DODGE_MIN) + ' min skipped</span>' : '') +
+          (surfed ? '<span class="chip">' + surfed + ' urge' + (surfed === 1 ? '' : 's') + ' outlasted</span>' : '') +
+          '</div>'
+        : '');
+  }
+  if (Bridge.ok && reelsArmed) {
+    Shield.loadDiag();
+    const dg = Shield.diag || {};
+    const ev = dg.events || [];
+    html += '<div class="set-row" style="display:block;margin-top:4px">' +
+      '<div class="row"><div class="grow"><div class="t">Detection log</div>' +
+      '<div class="d">What the shield saw each time it blocked or released — tuning evidence for Instagram.</div></div>' +
+      '<button class="switch ' + (dg.deep ? 'on' : '') + '" data-action="diagdeep" role="switch" aria-checked="' + (dg.deep ? 'true' : 'false') + '" aria-label="Deep capture"></button></div>' +
+      '<div class="d" style="font-size:11px;margin-top:4px">Deep capture saves the walked screen layout at the next block.</div>';
+    if (ev.length) {
+      html += '<div style="max-height:190px;overflow-y:auto;margin-top:8px">';
+      ev.slice(-8).reverse().forEach(e => {
+        const dte = new Date(e.t || 0);
+        const tm = isNaN(dte.getTime()) ? '—' : dte.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const nav = (e.nav || []).map(n => (n.s ? '◉' : '') + String(n.l || '').split(',')[0].split(' ')[0]).join(' · ');
+        const isLift = e.d === 'lift';
+        const nm = isLift ? 'Released' : (e.d === 'reblock' ? 'Blocked again' : 'Blocked');
+        html += '<div class="row" style="gap:8px;padding:6px 0;border-top:1px solid var(--border);align-items:baseline">' +
+          '<span style="font-size:10.5px;color:var(--muted);min-width:58px;flex:none">' + tm + '</span>' +
+          '<span style="font-size:11.5px;font-weight:700;flex:none;color:' + (isLift ? 'var(--muted)' : 'var(--danger)') + '">' + nm + '</span>' +
+          '<span style="font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+          esc(e.why || '') + (nav ? ' · ' + esc(nav) : '') + '</span></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="muted" style="font-size:11.5px;margin-top:8px">No detections yet. Open Instagram or Facebook and this fills in automatically.</p>';
+    }
+    if (dg.errCount) {
+      html += '<p class="muted" style="font-size:10.5px;margin-top:8px;color:var(--danger)">' + dg.errCount +
+        ' internal hiccup' + (dg.errCount > 1 ? 's' : '') + ' recorded' +
+        (dg.errLast ? ' · last: ' + esc(String(dg.errLast).slice(0, 44)) : '') + '</p>';
+    }
+    html += '<div class="row" style="gap:8px;margin-top:10px">' +
+      '<button class="btn soft sm" data-action="diagcopy">Copy report</button>' +
+      '<button class="btn soft sm" data-action="diagclear">Clear</button></div></div>';
+  }
+  if (!Bridge.ok)
+    html += '<p class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.5">Runs in the Android app — the web preview shows the controls only.</p>';
+  html += '</div>';
+
+  /* quick block: lock every blocked app right now for a while */
+  const qs = quickState();
+  const canQuick = S.blockedApps.length > 0 && (!Bridge.ok || Shield.ready);
+  html += '<p class="h-label">Block now</p><div class="card">';
+  if (qs.active) {
+    html += '<div class="row"><div class="grow">' +
+      '<div style="font-weight:700;font-size:14.5px;color:var(--accent)">Blocking now</div>' +
+      '<div class="muted" style="font-size:12px;margin-top:3px">' + S.blockedApps.length + ' app' + (S.blockedApps.length === 1 ? '' : 's') + ' locked · <span id="quick-left">' + fmtClock(qs.left / 1000) + '</span> left</div></div>' +
+      '<button class="btn danger sm auto" data-action="stopquick">Stop</button></div>';
+  } else {
+    html += '<p class="muted" style="font-size:12.5px;line-height:1.55">Lock every blocked app right now — no session needed. It lifts on its own.</p>' +
+      '<div class="row" style="margin-top:12px;gap:8px">' + [15, 30, 60, 120].map(m =>
+        '<button class="chip grow" style="padding:12px 0;justify-content:center;font-weight:800"' + (canQuick ? '' : ' disabled') + ' data-action="quickfor" data-min="' + m + '">' + m + ' min</button>').join('') + '</div>';
+    if (!S.blockedApps.length)
+      html += '<p class="muted" style="font-size:11.5px;margin-top:8px">Choose blocked apps above first.</p>';
+    else if (Bridge.ok && !Shield.ready)
+      html += '<p class="muted" style="font-size:11.5px;margin-top:8px">Needs the two permissions at the top.</p>';
+  }
+  if (!Bridge.ok)
+    html += '<p class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.5">Runs in the Android app — the web preview shows the controls only.</p>';
+  html += '</div>';
+
+  /* daily time limits: per-app usage caps enforced all day */
+  const limitKeys = Object.keys(S.limits || {});
+  html += '<p class="h-label">Time limits · ' + limitKeys.length + '</p><div class="card">';
+  if (limitKeys.length) {
+    html += limitKeys.map(pkg => {
+      const min = S.limits[pkg];
+      const info = Shield.appInfo(pkg);
+      const ba = S.blockedApps.find(x => x.pkg === pkg);
+      const name = (info && info.n) || (ba && ba.label) || pkg;
+      const usedMin = Math.round(((Shield.usage && Shield.usage[pkg]) || 0) / 60);
+      const pct = clamp(Math.round(usedMin / min * 100), 0, 100);
+      const hit = usedMin >= min;
+      return '<div class="app-row" style="margin-bottom:8px">' + appAvatar(pkg, name, 38) +
+        '<div class="grow"><div class="t">' + esc(name) + '</div>' +
+        '<div class="bar" style="margin-top:7px;height:6px"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="d" style="margin-top:4px' + (hit ? ';color:var(--danger)' : '') + '">' +
+          (hit ? 'Limit reached — locked until tomorrow' : usedMin + ' of ' + min + ' min used today') + '</div></div>' +
+        '<button class="iconbtn" data-action="limitapp" data-p="' + esc(pkg) + '" aria-label="Change limit for ' + esc(name) + '">' + I.sliders + '</button></div>';
+    }).join('');
+  } else {
+    html += '<p class="muted" style="font-size:12.5px;line-height:1.55">Cap any app at a few minutes a day. When the cap is hit, the app locks until tomorrow — no session needed.</p>';
+  }
+  html += '<button class="btn soft sm" data-action="openlimits">' + I.plus +
+    (limitKeys.length ? 'Add or change limits' : 'Set a daily limit') + '</button>';
+  if (!Bridge.ok)
+    html += '<p class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.5">Usage tracking runs in the Android app — the web preview shows the controls only.</p>';
+  html += '</div>';
+
+  /* scheduled blocking: weekly windows, pauses, PIN-guarded (android shield) */
+  const ss = schedState();
+  const sc = S.schedule;
+  html += '<p class="h-label">Schedule blocking</p>' +
+    '<div class="card">' +
+    '<div class="set-row" style="border-bottom:none"><div class="grow"><div class="t">Block on a weekly schedule</div>' +
+    '<div class="d">Blocked apps stay locked at set times every week — even outside focus sessions.</div></div>' +
+    '<button class="switch ' + (sc.enabled ? 'on' : '') + '" data-action="schedtoggle" role="switch" aria-checked="' + !!sc.enabled + '" aria-label="Schedule blocking"></button></div>';
+  if (sc.enabled) {
+    html += '<div class="day-chips" role="group" aria-label="Days of the week">' +
+      DAY_L.map((d, i) => '<button class="chip ' + (sc.days[i] ? 'on' : '') + '" data-action="schedday" data-d="' + i + '" aria-pressed="' + !!sc.days[i] + '" aria-label="' + d + '">' + d[0] + '</button>').join('') + '</div>';
+    html += '<div class="row" style="margin-top:14px;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<span class="muted" style="font-size:11px;font-weight:800;letter-spacing:.08em">FROM</span>' +
+      '<input id="sched-start" class="input" style="width:112px;flex:none" type="time" value="' + esc(sc.start) + '" aria-label="Window start">' +
+      '<span class="muted" style="font-size:11px;font-weight:800;letter-spacing:.08em">TO</span>' +
+      '<input id="sched-end" class="input" style="width:112px;flex:none" type="time" value="' + esc(sc.end) + '" aria-label="Window end"></div>';
+    if (hmToMin(sc.start) > hmToMin(sc.end))
+      html += '<p class="muted" style="font-size:11.5px;margin-top:6px">Crosses midnight — the window runs past 00:00.</p>';
+    html += '<div class="set-row"><div class="grow"><div class="t">Strict block screen</div>' +
+      '<div class="d">No "Not now" dismiss during scheduled windows.</div></div>' +
+      '<button class="switch ' + (sc.strict ? 'on' : '') + '" data-action="schedstrict" role="switch" aria-checked="' + !!sc.strict + '" aria-label="Strict block screen"></button></div>';
+    if (!S.blockedApps.length) {
+      html += '<p class="muted" style="font-size:12.5px;margin-top:8px">Add blocked apps above — the schedule guards them.</p>';
+    } else if (ss.paused) {
+      html += '<div class="row" style="margin-top:10px;justify-content:space-between">' +
+        '<span style="font-size:13px;color:var(--gold);font-weight:700">Paused · <span id="pause-left">' + fmtClock(ss.pauseLeft / 1000) + '</span> left</span>' +
+        '<button class="btn soft sm auto" data-action="resumeshield">Resume now</button></div>';
+    } else {
+      const status = ss.active
+        ? '<span style="color:var(--accent);font-weight:700">Blocking now · until ' + esc(sc.end) + '</span>'
+        : '<span class="muted">Off now · ' + esc(schedDaysLabel()) + ' ' + esc(sc.start) + '–' + esc(sc.end) + '</span>';
+      html += '<div class="row" style="margin-top:10px;justify-content:space-between">' +
+        '<span style="font-size:12.5px">' + status +
+        ' <span class="muted">· pauses ' + ss.pausesUsed + '/' + S.settings.maxPauses + '</span></span>' +
+        '<button class="btn soft sm auto" data-action="pauseshield">Pause</button></div>';
+    }
+    if (!Bridge.ok)
+      html += '<p class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.5">Runs in the Android app — the web preview shows the controls only.</p>';
+  }
+  html += '</div>';
+
+  /* traps: visible reminders (work everywhere) */
+  html += '<p class="h-label">Traps · visible reminders</p>' +
+    '<div class="card"><div class="row"><input id="trap-label" class="input grow" placeholder="e.g. Doomscrolling, daydreaming…" maxlength="40">' +
+    '<button class="iconbtn" style="width:48px;height:48px;background:var(--accent-soft);color:var(--accent);border:none" data-action="addtrap" aria-label="Add trap">' + I.plus + '</button></div></div>';
+  if (S.blocklist.length) {
+    html += '<div style="margin-top:8px">' + S.blocklist.map(b =>
+      '<div class="trap-row"><div class="ic">' + I.ban + '</div>' +
+      '<div class="grow"><div class="t">' + esc(b.label) + '</div>' +
+      '<div class="d">added ' + dayLabel(b.createdAt) + '</div></div>' +
+      '<button class="iconbtn" data-action="deltrap" data-id="' + b.id + '" aria-label="Remove ' + esc(b.label) + '">' + I.trash + '</button></div>').join('') + '</div>';
+  }
+  $('#view').innerHTML = html;
+}
+
+/* ---------- app picker sheet ---------- */
+let PICKER_MODE = 'block';
+function appTile(a) {
+  const isLimit = PICKER_MODE === 'limit';
+  const isTrust = PICKER_MODE === 'trust';
+  const on = isLimit ? S.limits[a.p] != null
+    : isTrust ? S.trusted.indexOf(a.p) >= 0
+    : S.blockedApps.some(x => x.pkg === a.p);
+  const act = isLimit ? 'limitapp' : isTrust ? 'trustapp' : 'toggleapp';
+  return '<button class="app-tile ' + (on ? 'on' : '') + '" data-action="' + act + '" data-p="' + esc(a.p) + '" aria-label="' + esc(a.n) + '">' +
+    '<span class="tick">' + I.check + '</span>' +
+    (a.i ? '<img src="' + a.i + '" alt="">' :
+      '<div class="av" style="width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-weight:800;background:var(--surface);color:var(--muted)">' + esc((a.n || '?')[0]).toUpperCase() + '</div>') +
+    '<span>' + esc(a.n) + '</span></button>';
+}
+function renderAppList(q) {
+  const box = $('#app-list');
+  if (!box) return;
+  const ql = (q || '').trim().toLowerCase();
+  const apps = ql
+    ? Shield.apps.filter(a => a.n.toLowerCase().includes(ql) || a.p.toLowerCase().includes(ql))
+    : Shield.apps;
+  const sugg = $('#app-suggested');
+  if (sugg) {
+    if (ql || PICKER_MODE === 'trust') sugg.innerHTML = '';
+    else {
+      const inst = SUGGESTED_APPS.filter(x => Shield.appInfo(x[0]));
+      sugg.innerHTML = inst.length
+        ? '<p class="muted" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:2px 0 8px">Popular traps</p>' +
+          '<div class="row" style="flex-wrap:wrap;gap:6px">' + inst.map(x => {
+            const on = PICKER_MODE === 'limit' ? S.limits[x[0]] != null : S.blockedApps.some(b => b.pkg === x[0]);
+            const act = PICKER_MODE === 'limit' ? 'limitapp' : 'toggleapp';
+            return '<button class="chip ' + (on ? 'on' : '') + '" data-action="' + act + '" data-p="' + esc(x[0]) + '">' + esc(x[1]) + '</button>';
+          }).join('') + '</div>'
+        : '';
+    }
+  }
+  box.innerHTML = apps.length
+    ? '<div class="app-grid">' + apps.map(appTile).join('') + '</div>'
+    : '<p class="empty">No apps found.</p>';
+  const cnt = $('#pick-count');
+  if (cnt) cnt.textContent = String(PICKER_MODE === 'trust' ? S.trusted.length
+    : PICKER_MODE === 'limit' ? Object.keys(S.limits).length : S.blockedApps.length);
+}
+function openAppPicker(mode) {
+  PICKER_MODE = mode === 'limit' ? 'limit' : mode === 'trust' ? 'trust' : 'block';
+  if (!Shield.appsLoaded) Shield.loadApps();
+  const isLimit = PICKER_MODE === 'limit';
+  const isTrust = PICKER_MODE === 'trust';
+  const count = isTrust ? S.trusted.length
+    : isLimit ? Object.keys(S.limits).length : S.blockedApps.length;
+  const html =
+    '<div class="sheet" role="dialog" aria-label="' + (isTrust ? 'Choose trusted apps' : isLimit ? 'Set daily time limits' : 'Choose apps to block') + '">' +
+    '<div class="grab"></div>' +
+    '<div class="row"><h3 class="grow">' + (isTrust ? 'Trusted apps' : isLimit ? 'Time limits' : 'Block apps') + '</h3><span class="chip on" id="pick-count">' +
+    count + '</span></div>' +
+    '<p class="sub">' + (isTrust
+      ? 'While a trusted app is open, every ReCalm shield goes fully silent — no blocking, no screen reading, nothing for the app to detect. Tap an app to toggle trust.'
+      : isLimit
+      ? 'Tap an app to set its daily cap. When the cap is hit, the app locks until tomorrow.'
+      : 'Blocked during focus sessions and scheduled windows. Tap an app to toggle it.') + '</p>' +
+    '<input id="app-search" class="input" style="margin-top:14px" placeholder="Search installed apps…" autocomplete="off">' +
+    '<div id="app-suggested" style="margin-top:12px"></div>' +
+    '<div id="app-list"></div>' +
+    '<button class="btn primary" style="margin-top:14px" data-action="dismiss">Done</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+  renderAppList('');
+}
+
+/* ---------- limit sheet: daily cap for one app ---------- */
+function openLimitSheet(pkg) {
+  const info = Shield.appInfo(pkg);
+  const ba = S.blockedApps.find(x => x.pkg === pkg);
+  const name = (info && info.n) || (ba && ba.label) || pkg;
+  const cur = S.limits[pkg];
+  const usedMin = Math.round(((Shield.usage && Shield.usage[pkg]) || 0) / 60);
+  const html =
+    '<div class="sheet" role="dialog" aria-label="Daily limit for ' + esc(name) + '">' +
+    '<div class="grab"></div><h3>' + esc(name) + '</h3>' +
+    '<p class="sub">Daily time limit (IST days). ' + (cur
+      ? usedMin + ' of ' + cur + ' min used today.'
+      : 'Once the cap is hit, ' + esc(name) + ' locks until tomorrow.') + '</p>' +
+    '<div class="row" style="margin-top:16px;gap:8px;flex-wrap:wrap">' +
+      [0, 15, 30, 45, 60, 90, 120].map(m =>
+        '<button class="chip ' + ((cur || 0) === m ? 'on' : '') + '" style="padding:11px 14px" data-action="setlimit" data-p="' + esc(pkg) + '" data-min="' + m + '">' +
+        (m === 0 ? 'No limit' : m + ' min') + '</button>').join('') + '</div>' +
+    '<button class="btn ghost" style="margin-top:12px" data-action="dismissTop">Done</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+}
+
+/* ---------- rendering: settings view ---------- */
+function renderSettings() {
+  const st = S.settings;
+  const step = (key, val, d, min, max, unit) =>
+    '<div class="set-row"><div class="grow"><div class="t">' + val + ' <span class="muted" style="font-size:12px;font-weight:600">' + unit + '</span></div></div>' +
+    '<div class="stepper"><button class="stepbtn" data-action="step" data-key="' + key + '" data-d="' + d + '" data-min="' + min + '" data-max="' + max + '" aria-label="decrease">−</button>' +
+    '<button class="stepbtn" data-action="step" data-key="' + key + '" data-d="' + (-d) + '" data-min="' + min + '" data-max="' + max + '" aria-label="increase">+</button></div></div>';
+  const tog = (key, t, d) =>
+    '<div class="set-row"><div class="grow"><div class="t">' + t + '</div><div class="d">' + d + '</div></div>' +
+    '<button class="switch ' + (st[key] ? 'on' : '') + '" data-action="toggle" data-key="' + key + '" role="switch" aria-checked="' + !!st[key] + '" aria-label="' + t + '"></button></div>';
+  let html = '<p class="h-label">Sessions</p><div class="card">' +
+    step('focusMin', st.focusMin, 5, 5, 120, 'min focus') +
+    step('shortMin', st.shortMin, 1, 1, 30, 'min short break') +
+    step('longMin', st.longMin, 5, 5, 60, 'min long break') +
+    step('rounds', st.rounds, 1, 2, 8, 'rounds before long break') +
+    step('dailyGoalMin', st.dailyGoalMin, 15, 30, 480, 'min daily goal') +
+    '</div>';
+  html += '<p class="h-label">Behavior</p><div class="card">' +
+    tog('strictDefault', 'Strict mode by default', 'No pause, no early exit. Giving up needs a 3-second hold, then a 16-piece puzzle, and is logged as abandoned.') +
+    tog('autoBreak', 'Auto-start breaks', 'Short and long breaks begin on their own after a focus round.') +
+    tog('autoFocus', 'Auto-start next focus', 'The next focus round starts automatically when a break ends.') +
+    tog('keepAwake', 'Keep screen awake', 'Screen stays on while a session is running.') +
+    '</div>';
+  html += '<p class="h-label">Protection</p><div class="card">' +
+    '<div class="set-row">' +
+    (st.pinHash
+      ? '<div class="grow"><div class="t">PIN lock <span class="chip on" style="font-size:10px;padding:2px 8px;margin-left:4px">ON</span></div>' +
+        '<div class="d">A 4–6 digit PIN gates giving up strict sessions and pausing the schedule. No recovery — remember it.</div>' +
+        '<div class="row" style="gap:8px;margin-top:12px"><button class="btn soft sm auto" data-action="pinchange">Change PIN</button>' +
+        '<button class="btn ghost sm auto" data-action="pinremove">Remove</button></div></div>'
+      : '<div class="grow"><div class="t">PIN lock</div>' +
+        '<div class="d">A 4–6 digit PIN gates giving up strict sessions and pausing the schedule. No recovery — remember it.</div>' +
+        '<div class="row" style="gap:8px;margin-top:12px"><button class="btn soft sm auto" data-action="pinset">Set PIN</button></div></div>') +
+    '</div>' +
+    step('maxPauses', st.maxPauses, 1, 1, 10, 'pauses per day') +
+    '</div>';
+  html += '<p class="h-label">Sound</p><div class="card">' +
+    '<div class="set-row" style="flex-wrap:wrap"><div class="grow" style="min-width:100%"><div class="t">Ambience &amp; chimes</div>' +
+    '<div class="d">Rain, ocean waves or a deep hum while you focus — all synthesized, no files.</div></div>' +
+    '<div class="seg" style="width:100%">' +
+    ['off', 'rain', 'ocean', 'brown', 'chime'].map(v => '<button class="' + (st.sound === v ? 'on' : '') + '" data-action="setsound" data-v="' + v + '">' +
+      ({ off: 'Off', rain: 'Rain', ocean: 'Ocean', brown: 'Deep', chime: 'Chime' })[v] + '</button>').join('') + '</div></div>' +
+    '<div class="set-row"><div class="grow"><div class="t">Volume</div></div>' +
+    '<input type="range" min="0" max="1" step="0.05" value="' + st.volume + '" data-input="volume" style="width:140px" aria-label="Volume"></div>' +
+    '</div>';
+  html += '<p class="h-label">Theme</p><div class="card"><div class="set-row"><div class="grow"><div class="t">Color mood</div>' +
+    '<div class="d">Applies instantly, everywhere.</div></div>' +
+    '<div class="swatches">' +
+    [['aurora', '#34d399,#2dd4bf'], ['sunset', '#fb923c,#f59e0b'], ['lavender', '#a78bfa,#c4b5fd'], ['glass', '#f7fafd,#c3cedd']].map(([id, g]) =>
+      '<button class="swatch ' + (st.theme === id ? 'on' : '') + '" data-action="settheme" data-v="' + id + '" aria-label="' + id + ' theme" ' +
+      'style="background:linear-gradient(135deg,' + g + ')"></button>').join('') +
+    '</div></div></div>';
+  html += '<p class="h-label">Data</p><div class="card">' +
+    '<div class="set-row"><div class="grow"><div class="t">Export backup</div><div class="d">Saves all sessions, traps and settings as JSON.</div></div>' +
+    '<button class="btn soft sm" style="width:112px" data-action="export">' + I.dl + 'Export</button></div>' +
+    '<div class="set-row"><div class="grow"><div class="t">Reset everything</div><div class="d">Wipes all data on this device. Cannot be undone.</div></div>' +
+    '<button class="btn danger sm" style="width:112px" data-action="reset1">Reset</button></div></div>';
+  html += '<p class="h-label">About</p><div class="card" style="text-align:center">' +
+    '<div class="logo" style="margin:2px auto 10px">' + I.leaf + '</div>' +
+    '<div style="font-weight:800">ReCalm v2.8</div>' +
+    '<p class="muted" style="font-size:12.5px;margin-top:6px;line-height:1.6">Personal build · works fully offline<br>' +
+    'All data stays on this device — no accounts, no tracking, no ads.<br>Streaks and schedules use IST (UTC+5:30) day boundaries.</p></div>';
+  $('#view').innerHTML = html;
+}
+
+function renderView() {
+  if (TAB === 'timer') renderTimer();
+  else if (TAB === 'stats') renderStats();
+  else if (TAB === 'guard') renderGuard();
+  else renderSettings();
+}
+
+/* ---------- live timer display ---------- */
+const CIRC = 2 * Math.PI * 124;
+function updateTimerDisplay() {
+  if (TAB !== 'timer') return;
+  const elT = $('#time-txt'), elR = $('#ring-fg');
+  if (!elT || !elR) return;
+  const t = S.timer;
+  if (!t.running) {
+    elT.textContent = fmtClock(phaseMin(t.phase) * 60);
+    elR.style.strokeDashoffset = '0';
+    return;
+  }
+  const remainMs = t.paused && t.pausedAt
+    ? (t.endMs - t.pausedAt)
+    : (t.endMs - Date.now());
+  const total = t.plannedSec * 1000;
+  const remain = clamp(remainMs, 0, total);
+  elT.textContent = fmtClock(remain / 1000);
+  elR.style.strokeDashoffset = String(CIRC * (1 - remain / total));
+  if (Date.now() >= t.endMs && !t.paused) completePhase(false);
+}
+
+/* ---------- overlays ---------- */
+function closeOverlays() { $$('.overlay').forEach(o => o.remove()); }
+function overlayHtml(inner, center) {
+  return '<div class="overlay ' + (center ? 'center' : '') + '"><div class="backdrop" data-action="dismiss"></div>' + inner + '</div>';
+}
+function openStartSheet() {
+  const st = S.settings;
+  const t = S.timer;
+  const round = t.phase === 'focus' ? t.round : 1;
+  const html =
+    '<div class="sheet" role="dialog" aria-label="Start focus session">' +
+    '<div class="grab"></div><h3>Deep Focus — Round ' + round + '</h3>' +
+    '<p class="sub">' + st.focusMin + ' minutes. ' + (st.strictDefault ? 'Strict mode is on — commit fully.' : 'You can pause this one.') +
+    (Bridge.ok && S.blockedApps.length
+      ? (Shield.ready ? ' Shield will block ' + S.blockedApps.length + ' app' + (S.blockedApps.length === 1 ? '' : 's') + '.'
+                      : ' Shield needs its permissions — apps will not be blocked yet.')
+      : '') + '</p>' +
+    '<input id="subject" class="input" style="margin-top:16px" placeholder="What are you working on? (optional)" maxlength="60" autocomplete="off">' +
+    '<div class="row" style="margin-top:16px"><div class="grow"><div style="font-weight:700;font-size:14.5px">Strict mode</div>' +
+    '<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.45">No pause, no early exit. Quitting needs a 3-second hold and a 16-piece puzzle' + (S.settings.pinHash ? ' plus your PIN' : '') + ' and is recorded.</div></div>' +
+    '<button class="switch ' + (st.strictDefault ? 'on' : '') + '" id="strict-tog" role="switch" aria-checked="' + st.strictDefault + '" aria-label="Strict mode"></button></div>' +
+    '<button class="btn primary" style="margin-top:18px" data-action="begin">' + I.play + 'Start ' + st.focusMin + '-minute session</button>' +
+    '<button class="btn ghost" style="margin-top:8px" data-action="dismiss">Not now</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+  const tog = $('#strict-tog');
+  tog.addEventListener('click', e => {
+    e.stopPropagation();
+    tog.classList.toggle('on');
+    tog.setAttribute('aria-checked', tog.classList.contains('on') ? 'true' : 'false');
+  }); /* local choice, not persisted */
+}
+let autoTimer = null;
+function openCelebrate(away) {
+  closeOverlays();
+  const st = S.settings;
+  const tm = Math.round(todayMinutes());
+  const streak = computeStreak();
+  const last = S.sessions[S.sessions.length - 1];
+  const nxt = S.timer;
+  const isLong = nxt.phase === 'long';
+  const auto = st.autoBreak;
+  const html =
+    '<div class="modal" role="dialog" aria-label="Session complete">' +
+    '<img class="mascot" src="img/mascot-zen.png" alt="Mascot celebrating">' +
+    '<h3>Round complete</h3>' +
+    (last && last.subject ? '<p class="muted" style="font-size:13px;margin-top:5px">' + esc(last.subject) + '</p>' : '') +
+    (away ? '<p class="muted" style="font-size:12px;margin-top:6px">Finished while you were away — still counts.</p>' : '') +
+    '<div class="stats-line"><span class="chip on">Today ' + fmtDur(tm * 60) + '</span>' +
+    '<span class="chip">Streak ' + daysLabel(streak) + '</span></div>' +
+    /* v2.6: optional note, kept with the session record */
+    '<input id="sess-note" class="input" style="margin-top:16px" placeholder="How did it go? (optional note)" maxlength="80" autocomplete="off">' +
+    '<button class="btn primary" style="margin-top:20px" id="next-btn" data-action="startbreak">' + I.play +
+    'Start ' + (isLong ? 'long' : 'short') + ' break' + (auto ? ' <span id="cd">(5)</span>' : '') + '</button>' +
+    '<button class="btn ghost" style="margin-top:8px" data-action="dismiss">Stay here</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html, true));
+  if (auto) {
+    let n = 5;
+    autoTimer = setInterval(() => {
+      n--;
+      const cd = $('#cd');
+      if (!cd) { clearInterval(autoTimer); autoTimer = null; return; }
+      if (n <= 0) { clearInterval(autoTimer); autoTimer = null; startPhase(S.timer.phase, { round: S.timer.round }); closeOverlays(); }
+      else cd.textContent = '(' + n + ')';
+    }, 1000);
+  }
+}
+function openBreakOver() {
+  closeOverlays();
+  const st = S.settings;
+  const auto = st.autoFocus;
+  const html =
+    '<div class="modal" role="dialog" aria-label="Break over">' +
+    '<div class="logo" style="margin:0 auto 14px;width:56px;height:56px;border-radius:18px">' + I.zap + '</div>' +
+    '<h3>Break over</h3><p class="muted" style="font-size:13px;margin-top:6px">Ready for round ' + S.timer.round + ' of ' + st.rounds + '?</p>' +
+    '<button class="btn primary" style="margin-top:20px" data-action="startfocusnow">' + I.play + 'Start focus' + (auto ? ' <span id="cd">(5)</span>' : '') + '</button>' +
+    '<button class="btn ghost" style="margin-top:8px" data-action="dismiss">Not yet</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html, true));
+  if (auto) {
+    let n = 5;
+    autoTimer = setInterval(() => {
+      n--;
+      const cd = $('#cd');
+      if (!cd) { clearInterval(autoTimer); autoTimer = null; return; }
+      if (n <= 0) { clearInterval(autoTimer); autoTimer = null; openStartSheet(); }
+      else cd.textContent = '(' + n + ')';
+    }, 1000);
+  }
+}
+function openEndEarlySheet() {
+  const t = S.timer;
+  const mins = Math.round(elapsedMs(t) / 60000);
+  const html =
+    '<div class="sheet" role="dialog" aria-label="End early">' +
+    '<div class="grab"></div><h3>End this session early?</h3>' +
+    '<p class="sub">' + mins + ' of ' + Math.round(t.plannedSec / 60) + ' minutes done. It will be logged as <b style="color:var(--danger)">abandoned</b> — only completed sessions feed your streak.</p>' +
+    '<button class="btn primary" style="margin-top:18px" data-action="dismiss">' + I.play + 'Keep going</button>' +
+    '<button class="btn danger" style="margin-top:8px" data-action="confirmend">End early — log ' + mins + ' min</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+}
+function openAbandonedNote(mins, planned) {
+  const html =
+    '<div class="modal" role="dialog" aria-label="Session abandoned">' +
+    '<div class="logo" style="margin:0 auto 14px;width:56px;height:56px;border-radius:18px;background:var(--danger-soft);color:var(--danger)">' + I.flag + '</div>' +
+    '<h3>Logged honestly</h3>' +
+    '<p class="muted" style="font-size:13px;margin-top:8px;line-height:1.6">' + mins + ' of ' + planned + ' minutes — recorded as abandoned.<br>The next round is a fresh one.</p>' +
+    '<button class="btn soft" style="margin-top:18px" data-action="dismiss">Understood</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html, true));
+}
+function openResetSheet() {
+  const html =
+    '<div class="sheet" role="dialog" aria-label="Reset everything">' +
+    '<div class="grab"></div><h3 style="color:var(--danger)">Reset everything?</h3>' +
+    '<p class="sub">All sessions, streaks, traps and settings will be wiped from this device. There is no undo.</p>' +
+    '<button class="btn danger" style="margin-top:18px" data-action="reset2">Yes — wipe everything</button>' +
+    '<button class="btn ghost" style="margin-top:8px" data-action="dismiss">Cancel</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+}
+
+/* ---------- jigsaw gate: a 4x4 picture puzzle stands between
+   the 3-second hold and actually stopping a strict session ---------- */
+function openPuzzle(onSolved) {
+  closeOverlays();
+  const IMG = 'img/mascot-zen.png';
+  const pos = p => ((p % 4) / 3 * 100) + '% ' + (Math.floor(p / 4) / 3 * 100) + '%';
+  const tileBg = p => 'background-image:url(' + IMG + ');background-size:400% 400%;background-position:' + pos(p);
+  const placed = new Array(16).fill(-1);   /* cell -> piece id */
+  const locked = new Array(16).fill(false);
+  let tray = [], sel = -1;
+  do {
+    tray = Array.from({ length: 16 }, (_, i) => i);
+    for (let i = 15; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = tray[i]; tray[i] = tray[j]; tray[j] = t; }
+  } while (tray.every((p, i) => p === i));
+  const html =
+    '<div class="modal pz-wrap" role="dialog" aria-label="Solve the puzzle to stop the timer">' +
+    '<h3>Really stopping?</h3>' +
+    '<p class="muted" style="font-size:12.5px;margin-top:6px;line-height:1.5">Place all 16 pieces where they belong — only then can this session end.</p>' +
+    '<div class="pz-board" id="pz-board">' +
+      Array.from({ length: 16 }, (_, i) =>
+        '<div class="pz-cell" data-cell="' + i + '" role="button" aria-label="puzzle slot ' + (i + 1) + '">' +
+        '<i class="pz-hint" style="' + tileBg(i) + '"></i></div>').join('') +
+    '</div>' +
+    '<div class="pz-tray" id="pz-tray"></div>' +
+    '<button class="btn ghost sm" style="margin-top:14px" data-action="dismiss">Keep focusing instead</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html, true));
+  const board = $('#pz-board'), trayEl = $('#pz-tray');
+  const renderTray = () => {
+    trayEl.innerHTML = tray.map(p =>
+      '<div class="pz-tile' + (p === sel ? ' sel' : '') + '" data-piece="' + p + '" role="button" aria-label="puzzle piece" style="' + tileBg(p) + '"></div>').join('');
+  };
+  renderTray();
+  const pickUp = i => {
+    if (locked[i] || placed[i] < 0) return;
+    tray.push(placed[i]);
+    placed[i] = -1;
+    const tile = board.querySelector('[data-cell="' + i + '"] .pz-tile');
+    if (tile) tile.remove();
+    renderTray();
+  };
+  const check = () => {
+    if (placed.some((p, i) => !locked[i] && p < 0)) return;   /* board not full yet */
+    const bad = [];
+    placed.forEach((p, i) => {
+      if (locked[i] || p < 0) return;
+      if (p === i) { locked[i] = true; board.querySelector('[data-cell="' + i + '"]').classList.add('locked'); }
+      else bad.push(i);
+    });
+    if (!bad.length) {   /* solved — the session can now be stopped */
+      document.querySelector('.pz-wrap').classList.add('pz-done');
+      trayEl.innerHTML = '<span style="font-size:12px;font-weight:700;color:var(--accent)">Solved — stopping the timer…</span>';
+      Bridge.vibrate(160);
+      setTimeout(() => { closeOverlays(); onSolved(); }, 650);
+      return;
+    }
+    Bridge.vibrate(70);
+    bad.forEach(i => {
+      const cell = board.querySelector('[data-cell="' + i + '"]');
+      cell.classList.add('bad');
+      setTimeout(() => { cell.classList.remove('bad'); pickUp(i); }, 340);
+    });
+  };
+  trayEl.addEventListener('click', e => {
+    const t = e.target.closest('.pz-tile');
+    if (!t) return;
+    const p = +t.dataset.piece;
+    sel = sel === p ? -1 : p;
+    renderTray();
+  });
+  board.addEventListener('click', e => {
+    const cell = e.target.closest('.pz-cell');
+    if (!cell) return;
+    const i = +cell.dataset.cell;
+    if (locked[i]) return;
+    if (placed[i] >= 0) { pickUp(i); return; }   /* tap a placed piece to take it back */
+    if (sel < 0) return;
+    const p = sel;
+    sel = -1;
+    tray = tray.filter(x => x !== p);
+    placed[i] = p;
+    cell.insertAdjacentHTML('beforeend', '<div class="pz-tile" style="' + tileBg(p) + '"></div>');
+    renderTray();
+    check();
+  });
+}
+
+/* ---------- PIN & pause sheets (refocus-style guardrails) ---------- */
+function openPinSheet(title, sub, onOk) {
+  closeOverlays();
+  const html =
+    '<div class="sheet" role="dialog" aria-label="' + esc(title) + '">' +
+    '<div class="grab"></div><h3>' + esc(title) + '</h3><p class="sub">' + esc(sub) + '</p>' +
+    '<input id="pin-in" class="input" style="margin-top:16px;letter-spacing:.4em;text-align:center;font-size:20px" ' +
+    'type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="••••" aria-label="PIN">' +
+    '<p id="pin-err" style="font-size:12px;margin-top:8px;min-height:15px;color:var(--danger);font-weight:600"></p>' +
+    '<button class="btn primary" style="margin-top:10px" id="pin-ok">Confirm</button>' +
+    '<button class="btn ghost" style="margin-top:8px" data-action="dismiss">Cancel</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+  const inp = $('#pin-in'), err = $('#pin-err');
+  const submit = () => {
+    if (sha256((inp.value || '').trim()) === S.settings.pinHash) { closeOverlays(); onOk(); }
+    else { err.textContent = 'Wrong PIN — try again'; inp.value = ''; inp.focus(); Bridge.vibrate(120); }
+  };
+  $('#pin-ok').addEventListener('click', submit);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  setTimeout(() => inp.focus(), 80);
+}
+function openSetPinSheet() {
+  closeOverlays();
+  const html =
+    '<div class="sheet" role="dialog" aria-label="Set a PIN">' +
+    '<div class="grab"></div><h3>Set a PIN</h3>' +
+    '<p class="sub">4–6 digits. It gates giving up strict sessions and pausing the schedule. There is no recovery — remember it.</p>' +
+    '<input id="pin-new" class="input" style="margin-top:16px;letter-spacing:.4em;text-align:center;font-size:20px" type="password" inputmode="numeric" maxlength="6" placeholder="new PIN" aria-label="New PIN">' +
+    '<input id="pin-new2" class="input" style="margin-top:10px;letter-spacing:.4em;text-align:center;font-size:20px" type="password" inputmode="numeric" maxlength="6" placeholder="repeat PIN" aria-label="Repeat PIN">' +
+    '<p id="pin-err" style="font-size:12px;margin-top:8px;min-height:15px;color:var(--danger);font-weight:600"></p>' +
+    '<button class="btn primary" style="margin-top:10px" id="pin-save">Save PIN</button>' +
+    '<button class="btn ghost" style="margin-top:8px" data-action="dismiss">Cancel</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+  const err = $('#pin-err');
+  const savePin = () => {
+    const a = ($('#pin-new') || {}).value || '', b = ($('#pin-new2') || {}).value || '';
+    if (!/^\d{4,6}$/.test(a)) { err.textContent = 'Use 4–6 digits'; return; }
+    if (a !== b) { err.textContent = 'PINs do not match'; return; }
+    S.settings.pinHash = sha256(a);
+    save(); closeOverlays(); renderView(); toast('PIN saved');
+  };
+  $('#pin-save').addEventListener('click', savePin);
+  [$('#pin-new'), $('#pin-new2')].forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') savePin(); }));
+  setTimeout(() => $('#pin-new').focus(), 80);
+}
+function doPause(min) {
+  const now = Date.now();
+  S.pauseUntil = now + min * 60000;
+  S.pauses.push({ t: now });
+  save();
+  Bridge.pauseShield(S.pauseUntil);
+  renderView();
+  toast('Shield paused for ' + min + ' min — take a breather');
+}
+function openPauseSheet() {
+  const used = S.pauses.filter(p => dayKey(p.t) === dayKey(Date.now())).length;
+  const left = Math.max(0, S.settings.maxPauses - used);
+  const html =
+    '<div class="sheet" role="dialog" aria-label="Pause blocking">' +
+    '<div class="grab"></div><h3>Pause the schedule?</h3>' +
+    '<p class="sub">Scheduled blocking switches off for a while, then comes back on its own. ' +
+    (left > 0 ? left + ' of ' + S.settings.maxPauses + ' pauses left today.' : 'Daily limit reached — no pauses left today.') + '</p>' +
+    '<div class="row" style="margin-top:16px;gap:8px">' + [5, 15, 30, 60].map(m =>
+      '<button class="chip grow" style="padding:12px 0;justify-content:center;font-weight:800" data-action="pausefor" data-min="' + m + '"' + (left <= 0 ? ' disabled' : '') + '>' + m + ' min</button>').join('') + '</div>' +
+    '<button class="btn ghost" style="margin-top:12px" data-action="dismiss">Keep blocking</button></div>';
+  document.body.insertAdjacentHTML('beforeend', overlayHtml(html));
+}
+
+/* ---------- toast & confetti ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+function confetti() {
+  const cvs = document.createElement('canvas');
+  cvs.id = 'confetti';
+  document.body.appendChild(cvs);
+  const ctx = cvs.getContext('2d');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cvs.width = innerWidth * dpr; cvs.height = innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const cs = getComputedStyle(document.documentElement);
+  const colors = [cs.getPropertyValue('--accent'), cs.getPropertyValue('--accent2'), '#fbbf24', '#ffffff'];
+  const ps = [];
+  for (let i = 0; i < 130; i++) {
+    ps.push({
+      x: innerWidth / 2 + (Math.random() - 0.5) * 140,
+      y: innerHeight * 0.32 + (Math.random() - 0.5) * 60,
+      vx: (Math.random() - 0.5) * 11,
+      vy: -Math.random() * 10 - 3,
+      w: 5 + Math.random() * 6, h: 4 + Math.random() * 5,
+      r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+      c: colors[i % colors.length].trim(),
+    });
+  }
+  const t0 = performance.now();
+  (function frame(now) {
+    const t = (now - t0) / 1000;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    let alive = false;
+    for (const p of ps) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.22; p.vx *= 0.99; p.r += p.vr;
+      const a = clamp(1 - (t - 2) / 0.8, 0, 1);
+      if (a > 0 && p.y < innerHeight + 30) {
+        alive = true;
+        ctx.save(); ctx.globalAlpha = a; ctx.translate(p.x, p.y); ctx.rotate(p.r);
+        ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+      }
+    }
+    if (alive && t < 3.2) requestAnimationFrame(frame);
+    else cvs.remove();
+  })(t0);
+}
+
+/* ---------- zen mode ---------- */
+function enterZen() {
+  const ex = $('#zen-exit');
+  if (ex) ex.innerHTML = I.chevDn;
+  document.body.classList.add('zen', 'zenui-hide');
+}
+function exitZen() { document.body.classList.remove('zen', 'zenui-hide'); }
+
+/* ---------- actions ---------- */
+const ACTIONS = {
+  tab: el => { TAB = el.dataset.v; exitZen(); renderAll(); },
+  zen: () => { enterZen(); toast('Zen mode — tap to show controls'); },
+  zenoff: () => exitZen(),
+  setfocus: el => { S.settings.focusMin = +el.dataset.v; save(); renderView(); },
+  startfocus: () => { Bridge.askNotifPermission(); openStartSheet(); },
+  startfocusnow: () => { closeOverlays(); openStartSheet(); },
+  begin: () => {
+    const strict = $('#strict-tog') && $('#strict-tog').classList.contains('on');
+    const subject = (($('#subject') && $('#subject').value) || '').trim();
+    closeOverlays();
+    startPhase('focus', { subject, strict });
+  },
+  startbreak: () => {
+    clearInterval(autoTimer); autoTimer = null;
+    const t = S.timer;
+    closeOverlays();
+    startPhase(t.phase, { round: t.round });
+  },
+  pause: () => pauseTimer(),
+  resume: () => resumeTimer(),
+  endearly: () => openEndEarlySheet(),
+  confirmend: () => { closeOverlays(); abandon(); },
+  skipbreak: () => skipBreak(),
+  dismiss: () => { clearInterval(autoTimer); autoTimer = null; closeOverlays(); renderView(); },
+  step: el => {
+    const k = el.dataset.key;
+    S.settings[k] = clamp(S.settings[k] + (+el.dataset.d), +el.dataset.min, +el.dataset.max);
+    save(); renderView();
+  },
+  toggle: el => {
+    const k = el.dataset.key;
+    S.settings[k] = !S.settings[k];
+    save(); renderView();
+  },
+  setsound: el => {
+    S.settings.sound = el.dataset.v;
+    save(); renderView();
+    if (S.settings.sound === 'chime') { Sound.unlock(); Sound.breakOver(); return; }
+    Sound.stopAmb(); /* switch the live scape if one is playing */
+    const t = S.timer;
+    if (ambOn() && t && t.running && !t.paused && t.phase === 'focus') Sound.startAmb();
+  },
+  settheme: el => {
+    S.settings.theme = el.dataset.v;
+    document.documentElement.dataset.theme = S.settings.theme;
+    Bridge.setTheme(S.settings.theme);
+    save(); renderView();
+  },
+  openpicker: () => openAppPicker(),
+  toggleapp: el => {
+    const pkg = el.dataset.p;
+    if (!pkg) return;
+    const i = S.blockedApps.findIndex(x => x.pkg === pkg);
+    if (i >= 0) S.blockedApps.splice(i, 1);
+    else {
+      const a = Shield.appInfo(pkg);
+      S.blockedApps.push({ pkg, label: (a && a.n) || pkg, createdAt: Date.now() });
+    }
+    save(); syncShield();
+    const list = $('#app-list');
+    if (list) renderAppList($('#app-search') ? $('#app-search').value : '');
+    else if (TAB === 'guard') renderView();
+  },
+  delapp: el => {
+    S.blockedApps = S.blockedApps.filter(x => x.pkg !== el.dataset.p);
+    save(); syncShield(); renderView();
+    toast('App unblocked');
+  },
+  grantusage: () => { Bridge.openUsageAccessSettings(); toast('Allow ReCalm, then come back'); },
+  grantoverlay: () => { Bridge.requestOverlayPermission(); toast('Allow ReCalm, then come back'); },
+  clearlog: () => { Bridge.clearBlockLog(); Shield.entries = []; Shield.count = 0; renderView(); toast('Log cleared'); },
+  schedtoggle: () => {
+    S.schedule.enabled = !S.schedule.enabled;
+    save(); syncShield(); renderView();
+    toast(S.schedule.enabled ? 'Schedule on — ' + schedDaysLabel() : 'Schedule off');
+  },
+  schedday: el => {
+    const d = +el.dataset.d;
+    S.schedule.days[d] = S.schedule.days[d] ? 0 : 1;
+    save(); syncShield(); renderView();
+  },
+  schedstrict: () => { S.schedule.strict = !S.schedule.strict; save(); syncShield(); renderView(); },
+  pauseshield: () => {
+    if (shieldArmed()) { toast('Cannot pause during a focus session'); return; }
+    const go = () => openPauseSheet();
+    if (S.settings.pinHash) openPinSheet('PIN required', 'Enter your PIN to pause the schedule.', go);
+    else go();
+  },
+  pausefor: el => { closeOverlays(); doPause(+el.dataset.min || 5); },
+  resumeshield: () => {
+    S.pauseUntil = 0; save(); Bridge.resumeShield(); renderView(); toast('Shield resumed');
+  },
+  quickfor: el => { closeOverlays(); armQuick(+el.dataset.min || 15); },
+  stopquick: () => {
+    const go = () => { S.quick.until = 0; save(); Bridge.setQuickBlock(0, []); renderView(); toast('Quick block ended'); };
+    if (S.settings.pinHash) openPinSheet('PIN required', 'Enter your PIN to end the quick block early.', go);
+    else go();
+  },
+  reelstoggle: el => {
+    const pkg = el.dataset.p;
+    if (!pkg) return;
+    const i = S.reelsOnly.indexOf(pkg);
+    if (i >= 0) S.reelsOnly.splice(i, 1); else S.reelsOnly.push(pkg);
+    save(); syncReels(); renderView();
+    const info = Shield.appInfo(pkg);
+    const name = (info && info.n) || 'App';
+    toast(S.reelsOnly.indexOf(pkg) >= 0
+      ? name + ' Reels will be blocked — all day'
+      : name + ' Reels unblocked');
+  },
+  granta11y: () => { Bridge.openAccessibilitySettings(); toast('Turn on ReCalm Reels Shield, then come back'); },
+  diagdeep: () => {
+    const dg = Shield.diag || {};
+    Bridge.setReelsDeep(!dg.deep);
+    Shield.loadDiag();
+    renderView();
+    toast((Shield.diag && Shield.diag.deep) ? 'Deep capture on — the next block saves the screen layout' : 'Deep capture off');
+  },
+  diagcopy: () => {
+    Shield.loadDiag();
+    const report = 'ReCalm v2.5 reels diagnostics\n' + JSON.stringify(Shield.diag || {});
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = report;
+      ta.style.cssText = 'position:fixed;left:-999px;top:0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      toast('Report copied — paste it anywhere');
+    } catch (e) { toast('Copy failed'); }
+  },
+  diagclear: () => {
+    Bridge.clearReelsDiag();
+    Shield.loadDiag();
+    renderView();
+    toast('Detection log cleared');
+  },
+  openlimits: () => openAppPicker('limit'),
+  opentrust: () => openAppPicker('trust'),
+  trustapp: el => {
+    const pkg = el.dataset.p;
+    if (!pkg) return;
+    const i = S.trusted.indexOf(pkg);
+    if (i >= 0) S.trusted.splice(i, 1); else S.trusted.push(pkg);
+    save(); syncTrusted();
+    const info = Shield.appInfo(pkg);
+    const name = (info && info.n) || 'App';
+    const list = $('#app-list');
+    if (list) renderAppList($('#app-search') ? $('#app-search').value : '');
+    else if (TAB === 'guard') renderView();
+    const cnt = $('#pick-count');
+    if (cnt) cnt.textContent = String(S.trusted.length);
+    toast(S.trusted.indexOf(pkg) >= 0
+      ? name + ' trusted — shields go silent in it'
+      : name + ' not trusted — shields active again');
+  },
+  untrust: el => {
+    const pkg = el.dataset.p;
+    if (!pkg) return;
+    S.trusted = S.trusted.filter(p => p !== pkg);
+    save(); syncTrusted(); renderView();
+    const info = Shield.appInfo(pkg);
+    toast(((info && info.n) || 'App') + ' not trusted — shields active in it again');
+  },
+  limitapp: el => openLimitSheet(el.dataset.p),
+  setlimit: el => {
+    const pkg = el.dataset.p, min = +el.dataset.min || 0;
+    const info = Shield.appInfo(pkg);
+    if (min > 0) { S.limits[pkg] = min; toast((info ? info.n : 'App') + ' capped at ' + min + ' min/day'); }
+    else { delete S.limits[pkg]; toast('Limit removed'); }
+    save(); syncLimits();
+    const ov = $$('.overlay');
+    if (ov.length) {
+      ov[ov.length - 1].remove();
+      if ($('#app-list')) renderAppList($('#app-search') ? $('#app-search').value : '');
+      else if (TAB === 'guard') renderView();
+    } else if (TAB === 'guard') renderView();
+  },
+  dismissTop: () => { const ov = $$('.overlay'); if (ov.length) ov[ov.length - 1].remove(); },
+  pinset: () => openSetPinSheet(),
+  pinchange: () => openPinSheet('Current PIN', 'Enter your current PIN to change it.', openSetPinSheet),
+  pinremove: () => openPinSheet('Current PIN', 'Enter your current PIN to remove the lock.', () => {
+    S.settings.pinHash = ''; save(); renderView(); toast('PIN removed');
+  }),
+  addtrap: () => {
+    const inp = $('#trap-label');
+    const v = ((inp && inp.value) || '').trim();
+    if (!v) { toast('Give it a name first'); return; }
+    S.blocklist.unshift({ id: uid(), label: v, createdAt: Date.now() });
+    save(); renderView(); toast('Trap added — it will show during focus');
+  },
+  deltrap: el => {
+    S.blocklist = S.blocklist.filter(b => b.id !== el.dataset.id);
+    save(); renderView(); toast('Removed');
+  },
+  export: () => {
+    const payload = JSON.stringify({
+      app: 'ReCalm', version: 1, exportedAt: new Date().toISOString(),
+      settings: S.settings, sessions: S.sessions, blocklist: S.blocklist, blockedApps: S.blockedApps,
+      schedule: S.schedule, pauses: S.pauses, quick: S.quick, limits: S.limits, reelsOnly: S.reelsOnly,
+      trusted: S.trusted,
+    }, null, 2);
+    if (Bridge.exportData(payload)) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+    a.download = 'recalm-backup.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('Backup downloaded');
+  },
+  reset1: () => openResetSheet(),
+  reset2: () => {
+    clearInterval(autoTimer); autoTimer = null;
+    closeOverlays();
+    Sound.stopAmb(); releaseWake(); Bridge.cancelNotify();
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    Bridge.clearBlockLog(); Shield.entries = []; Shield.count = 0;
+    load();
+    document.documentElement.dataset.theme = S.settings.theme;
+    Bridge.setTheme(S.settings.theme);
+    Sound.setVolume(S.settings.volume);
+    syncShield();
+    renderAll();
+    toast('Everything reset');
+  },
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const fn = ACTIONS[el.dataset.action];
+  if (fn) fn(el, e);
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.id === 'app-search') { renderAppList(el.value); return; }
+  if (el.id === 'sess-note') { /* v2.6: jot it onto the finished session */
+    const last = S.sessions[S.sessions.length - 1];
+    if (last && last.type === 'focus') { last.note = el.value.trim(); save(); }
+    return;
+  }
+  if (el.id === 'sched-start' || el.id === 'sched-end') return; /* committed via change */
+  if (el.dataset && el.dataset.input === 'volume') {
+    S.settings.volume = +el.value;
+    save(); Sound.setVolume(S.settings.volume);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (document.body.classList.contains('zen')) exitZen(); else { closeOverlays(); renderView(); } }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'sched-start' || el.id === 'sched-end') {
+    const k = el.id === 'sched-start' ? 'start' : 'end';
+    if (el.value) S.schedule[k] = el.value;
+    save(); syncShield();
+    if (TAB === 'guard') renderView();
+  }
+});
+/* first gesture unlocks audio everywhere */
+document.addEventListener('pointerdown', () => Sound.unlock(), { once: true, capture: true });
+
+/* zen: tap main area toggles controls; dedicated button leaves */
+document.addEventListener('click', e => {
+  if (!document.body.classList.contains('zen')) return;
+  if (e.target.closest('#zen-exit') || e.target.closest('.overlay')) return;
+  document.body.classList.toggle('zenui-hide');
+});
+
+/* android hardware back */
+window.__androidBack = function () {
+  if (document.body.classList.contains('zen')) { exitZen(); return true; }
+  if ($('.overlay')) { ACTIONS.dismiss(); return true; }
+  if (TAB !== 'timer') { TAB = 'timer'; renderAll(); return true; }
+  return false;
+};
+
+/* visibility: pause rain when hidden, re-reconcile on return */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { Sound.stopAmb(); }
+  else {
+    reconcile();
+    if (Bridge.ok) { Shield.refreshPerms(); Shield.loadLog(); Shield.loadState(); syncShield(); }
+    if (TAB === 'guard') renderView();
+    const t = S.timer;
+    if (t && t.running && !t.paused && t.phase === 'focus' && ambOn()) Sound.startAmb();
+    if (t && t.running && !t.paused && S.settings.keepAwake) acquireWake();
+    updateTimerDisplay();
+  }
+});
+
+/* ---------- boot ---------- */
+load();
+document.documentElement.dataset.theme = S.settings.theme;
+Bridge.setTheme(S.settings.theme);
+if (Bridge.ok) {
+  Shield.refreshPerms(); Shield.loadLog(); Shield.loadState();
+  /* the native trusted list is what the shields obey — reconcile to it */
+  const tr = Bridge.getTrustedApps();
+  if (tr) { try { const a = JSON.parse(tr); if (Array.isArray(a)) S.trusted = a.filter(x => typeof x === 'string'); } catch (e) {} }
+}
+else Shield.loadApps(); /* web preview: demo list for the pickers */
+reconcile();
+syncShield();
+renderAll();
+let lastPauseSec = -1, lastQuickSec = -1;
+(function loop() {
+  if (!document.hidden) {
+    updateTimerDisplay();
+    const pl = $('#pause-left');
+    if (pl) {
+      const sec = Math.max(0, Math.round(((S.pauseUntil || 0) - Date.now()) / 1000));
+      if (sec !== lastPauseSec) {
+        lastPauseSec = sec;
+        pl.textContent = fmtClock(sec);
+        if (sec === 0 && S.pauseUntil) { S.pauseUntil = 0; if (TAB === 'guard') renderView(); }
+      }
+    }
+    const ql = $('#quick-left');
+    if (ql) {
+      const qsec = Math.max(0, Math.round(((S.quick.until || 0) - Date.now()) / 1000));
+      if (qsec !== lastQuickSec) {
+        lastQuickSec = qsec;
+        ql.textContent = fmtClock(qsec);
+        if (qsec === 0 && S.quick.until) { S.quick.until = 0; save(); renderView(); }
+      }
+    }
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

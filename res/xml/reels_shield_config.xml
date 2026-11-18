@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/reels_service_desc"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewClicked"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="true"
+    android:notificationTimeout="200"
+    android:packageNames="com.instagram.android,com.instagram.lite,com.facebook.katana,com.facebook.lite" />

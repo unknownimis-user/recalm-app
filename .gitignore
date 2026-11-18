@@ -1,0 +1,12 @@
+# build artifacts
+build/
+*.apk
+*.idsig
+
+# signing — never commit
+*.keystore
+*.jks
+
+# OS noise
+.DS_Store
+Thumbs.db
