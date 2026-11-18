@@ -12,7 +12,7 @@ Launcher name **ReCalm** · package id `com.personal.reclaim` · Android 7.0+
 (API 24+)
 
 <p align="center">
- 
+  <img src="docs/screenshot-app.png" alt="ReCalm app screenshot" width="360"/>
   <img src="docs/focus-timer.png" alt="ReCalm focus timer" width="360"/>
 </p>
 
